@@ -20,5 +20,39 @@
       "first"
     ],
     "hitType": "ground"
+  },
+  {
+    "hitTo": "rightField",
+    "userControls": "secondBase",
+    "correctPosition": "rfcutoff",
+    "incorrectPosition": "second",
+    "outs": 1,
+    "runners": [
+      "first",
+      "second"
+    ],
+    "hitType": "ground"
+  },
+  {
+    "hitTo": "firstBase",
+    "userControls": "shortstop",
+    "correctPosition": "second",
+    "incorrectPosition": "shortstopCover",
+    "outs": 0,
+    "runners": [
+      "first"
+    ],
+    "hitType": "ground"
+  },
+  {
+    "hitTo": "thirdBase",
+    "userControls": "firstBase",
+    "correctPosition": "first",
+    "incorrectPosition": "backupfirst",
+    "outs": 0,
+    "runners": [
+      "first"
+    ],
+    "hitType": "fly"
   }
 ]
