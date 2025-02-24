@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Essential for mobile -->
     <title>Baseball Brain</title>
     <style>
         body { 
@@ -9,33 +10,43 @@
             font-family: Arial, sans-serif; 
             margin: 0; 
             padding: 10px; 
+            overflow-x: hidden; 
         }
         #gameContainer {
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: column;
+            align-items: center;
             gap: 20px;
-            max-width: 1400px;
+            max-width: 100%;
             margin: 0 auto;
         }
         canvas { 
             border: 1px solid black; 
-            flex-shrink: 0; 
+            width: 100%; /* Scale to viewport */
+            max-width: 900px; /* Cap for desktop */
+            height: auto; /* Maintain aspect ratio */
         }
-        #score { font-size: 24px; margin: 10px 0; }
-        #instructions { font-size: 18px; margin: 10px 0; }
-        #authStatus { font-size: 16px; margin: 10px 0; color: #666; }
+        #score { font-size: clamp(18px, 5vw, 24px); margin: 10px 0; }
+        #instructions { font-size: clamp(14px, 4vw, 18px); margin: 10px 0; }
+        #authStatus { font-size: clamp(12px, 3.5vw, 16px); margin: 10px 0; color: #666; }
         #controls { 
             display: flex; 
+            flex-wrap: wrap; 
             gap: 10px; 
             justify-content: center; 
             margin-bottom: 10px; 
+        }
+        #controls button { 
+            padding: 10px 15px; 
+            font-size: clamp(14px, 4vw, 16px); 
+            min-width: 100px; 
         }
         #controls button:disabled { 
             opacity: 0.5; 
             cursor: not-allowed; 
         }
         #scenarioForm, #scenarioList { 
+            width: 100%; 
             max-width: 400px; 
             padding: 15px; 
             border: 1px solid #ccc; 
@@ -52,6 +63,16 @@
         label { 
             display: block; 
             margin-bottom: 5px; 
+            font-size: clamp(14px, 4vw, 16px); 
+        }
+        select, input[type="number"] { 
+            width: 100%; 
+            padding: 8px; 
+            font-size: clamp(14px, 4vw, 16px); 
+        }
+        input[type="checkbox"] { 
+            transform: scale(1.5); 
+            margin-right: 10px; 
         }
         #scenarioList ul { 
             list-style: none; 
@@ -65,15 +86,18 @@
             background: #fff; 
             border: 1px solid #ddd; 
             display: flex; 
+            flex-wrap: wrap; 
             justify-content: space-between; 
             align-items: center; 
+            font-size: clamp(12px, 3.5vw, 14px); 
         }
         #scenarioList button { 
             margin-left: 5px; 
-            padding: 5px 10px; 
+            padding: 8px 12px; 
             border: none; 
             color: white; 
             cursor: pointer; 
+            font-size: clamp(12px, 3.5vw, 14px); 
         }
         #scenarioList .delete-btn { 
             background: #ff4444; 
@@ -86,6 +110,17 @@
         }
         #scenarioList .view-btn:hover { 
             background: #0000cc; 
+        }
+        /* Media query for desktop */
+        @media (min-width: 768px) {
+            #gameContainer {
+                flex-direction: row;
+                justify-content: center;
+            }
+            canvas {
+                width: 900px;
+                height: 600px;
+            }
         }
     </style>
 </head>
@@ -102,7 +137,7 @@
     <div id="instructions">Click or press Enter to start, then again to pitch. Choose the correct position!</div>
     
     <div id="gameContainer">
-        <canvas id="gameCanvas" width="900" height="600"></canvas>
+        <canvas id="gameCanvas"></canvas>
         <div>
             <form id="scenarioForm">
                 <div class="form-group">
@@ -150,8 +185,8 @@
 
     <script>
         const CONSTANTS = {
-            CANVAS_WIDTH: 900,
-            CANVAS_HEIGHT: 600,
+            CANVAS_BASE_WIDTH: 900,
+            CANVAS_BASE_HEIGHT: 600,
             FIELDER_RADIUS: 15,
             BALL_RADIUS: 8,
             RUNNER_RADIUS: 10,
@@ -180,6 +215,7 @@
         let countdownInterval = null, countdownStartTime = null, showYellowCircles = false;
         let message = null, messageTimer = null, waitingForSecondClick = false, animationFrameId = null;
         let isAuthenticated = false, isPreviewMode = false;
+        let scaleFactor = 1;
 
         const shortstop = { x: 390, y: 200, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'SS' };
         const firstBase = { x: 575, y: 270, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: '1B' };
@@ -204,6 +240,18 @@
 
         const fieldersMap = { shortstop, firstBase, rightField, centerField, leftField, thirdBase, secondBase, pitcher, catcher };
         let scenarios = [];
+
+        function resizeCanvas() {
+            const viewportWidth = window.innerWidth - 20; // Account for padding
+            scaleFactor = Math.min(viewportWidth / CONSTANTS.CANVAS_BASE_WIDTH, 1);
+            canvas.width = CONSTANTS.CANVAS_BASE_WIDTH * scaleFactor;
+            canvas.height = CONSTANTS.CANVAS_BASE_HEIGHT * scaleFactor;
+            ctx.setTransform(scaleFactor, 0, 0, scaleFactor, 0, 0);
+            drawDynamic();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', resizeCanvas);
 
         function loadScenarios() {
             return new Promise((resolve) => {
@@ -311,7 +359,7 @@
             isPreviewMode = true;
             playInProgress = false;
             drawDynamic();
-            document.getElementById('instructions').textContent = 'Preview Mode - Click "Reset Play" to exit';
+            document.getElementById('instructions').textContent = 'Preview Mode - Tap "Reset Play" to exit';
             console.log('Previewing scenario:', currentScenario);
         }
 
@@ -410,46 +458,46 @@
         }
 
         function drawField() {
-            const stripeHeight = 50;
-            for (let y = 0; y < CONSTANTS.CANVAS_HEIGHT; y += stripeHeight) {
+            const stripeHeight = 50 / scaleFactor;
+            for (let y = 0; y < CONSTANTS.CANVAS_BASE_HEIGHT; y += stripeHeight) {
                 ctx.fillStyle = (Math.floor(y / stripeHeight) % 2 === 0) ? CONSTANTS.COLORS.LIGHT_GREEN : CONSTANTS.COLORS.DARK_GREEN;
-                ctx.fillRect(0, y, CONSTANTS.CANVAS_WIDTH, stripeHeight);
+                ctx.fillRect(0, y, CONSTANTS.CANVAS_BASE_WIDTH, stripeHeight);
             }
             ctx.fillStyle = CONSTANTS.COLORS.DIRT;
             ctx.beginPath();
             ctx.moveTo(450, 450); ctx.lineTo(600, 300); ctx.lineTo(450, 150); ctx.lineTo(300, 300); ctx.closePath();
             ctx.fill(); ctx.strokeStyle = 'white'; ctx.stroke();
-            ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 2 / scaleFactor;
             ctx.beginPath(); ctx.moveTo(450, 450); ctx.lineTo(900, 0); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(450, 450); ctx.lineTo(0, 0); ctx.stroke();
-            ctx.fillStyle = 'white'; const baseSize = 20;
+            ctx.fillStyle = 'white'; const baseSize = 20 / scaleFactor;
             ctx.fillRect(600 - baseSize / 2, 300 - baseSize / 2, baseSize, baseSize);
             ctx.fillRect(450 - baseSize / 2, 150 - baseSize / 2, baseSize, baseSize);
             ctx.fillRect(300 - baseSize / 2, 300 - baseSize / 2, baseSize, baseSize);
             ctx.fillRect(450 - baseSize / 2, 450 - baseSize / 2, baseSize, baseSize);
-            ctx.fillStyle = 'black'; ctx.font = '12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'black'; ctx.font = `${12 / scaleFactor}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText('H', 450, 450); ctx.fillText('1B', 600, 300); ctx.fillText('2B', 450, 150); ctx.fillText('3B', 300, 300);
         }
 
         function drawCircle(obj) {
             if (obj === currentScenario?.userControls && (obj.x !== obj.originalX || obj.y !== obj.originalY)) {
-                ctx.beginPath(); ctx.arc(obj.originalX, obj.originalY, obj.radius, 0, Math.PI * 2);
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'; ctx.lineWidth = 2; ctx.stroke(); ctx.closePath();
+                ctx.beginPath(); ctx.arc(obj.originalX, obj.originalY, obj.radius / scaleFactor, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'; ctx.lineWidth = 2 / scaleFactor; ctx.stroke(); ctx.closePath();
             }
-            ctx.beginPath(); ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
-            ctx.fillStyle = obj.color; ctx.fill(); ctx.strokeStyle = 'gold'; ctx.lineWidth = 2; ctx.stroke(); ctx.closePath();
-            ctx.fillStyle = 'white'; ctx.font = '12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.beginPath(); ctx.arc(obj.x, obj.y, obj.radius / scaleFactor, 0, Math.PI * 2);
+            ctx.fillStyle = obj.color; ctx.fill(); ctx.strokeStyle = 'gold'; ctx.lineWidth = 2 / scaleFactor; ctx.stroke(); ctx.closePath();
+            ctx.fillStyle = 'white'; ctx.font = `${12 / scaleFactor}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(obj.label, obj.x, obj.y);
         }
 
         function drawBall() {
-            ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            ctx.fillStyle = CONSTANTS.COLORS.BALL; ctx.fill(); ctx.strokeStyle = 'black'; ctx.lineWidth = 1; ctx.stroke(); ctx.closePath();
-            ctx.strokeStyle = 'red'; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(ball.x - ball.radius, ball.y - ball.radius / 2);
-            ctx.quadraticCurveTo(ball.x, ball.y, ball.x + ball.radius, ball.y + ball.radius / 2); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(ball.x - ball.radius, ball.y + ball.radius / 2);
-            ctx.quadraticCurveTo(ball.x, ball.y, ball.x + ball.radius, ball.y - ball.radius / 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius / scaleFactor, 0, Math.PI * 2);
+            ctx.fillStyle = CONSTANTS.COLORS.BALL; ctx.fill(); ctx.strokeStyle = 'black'; ctx.lineWidth = 1 / scaleFactor; ctx.stroke(); ctx.closePath();
+            ctx.strokeStyle = 'red'; ctx.lineWidth = 2 / scaleFactor;
+            ctx.beginPath(); ctx.moveTo(ball.x - ball.radius / scaleFactor, ball.y - ball.radius / (2 * scaleFactor));
+            ctx.quadraticCurveTo(ball.x, ball.y, ball.x + ball.radius / scaleFactor, ball.y + ball.radius / (2 * scaleFactor)); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(ball.x - ball.radius / scaleFactor, ball.y + ball.radius / (2 * scaleFactor));
+            ctx.quadraticCurveTo(ball.x, ball.y, ball.x + ball.radius / scaleFactor, ball.y - ball.radius / (2 * scaleFactor)); ctx.stroke();
         }
 
         function drawRunners() {
@@ -457,26 +505,26 @@
                 currentScenario.runners.forEach(base => {
                     const basePos = positions[base];
                     if (!basePos) return console.warn(`Invalid base: ${base}`);
-                    const runnerX = basePos.x + 10, runnerY = basePos.y + 10;
-                    ctx.beginPath(); ctx.arc(runnerX, runnerY, CONSTANTS.RUNNER_RADIUS, 0, Math.PI * 2);
+                    const runnerX = basePos.x + 10 / scaleFactor, runnerY = basePos.y + 10 / scaleFactor;
+                    ctx.beginPath(); ctx.arc(runnerX, runnerY, CONSTANTS.RUNNER_RADIUS / scaleFactor, 0, Math.PI * 2);
                     ctx.fillStyle = CONSTANTS.COLORS.RUNNER; ctx.fill(); ctx.closePath();
                 });
             }
         }
 
         function drawStatic() {
-            ctx.clearRect(0, 0, CONSTANTS.CANVAS_WIDTH, CONSTANTS.CANVAS_HEIGHT);
+            ctx.clearRect(0, 0, CONSTANTS.CANVAS_BASE_WIDTH, CONSTANTS.CANVAS_BASE_HEIGHT);
             drawField();
         }
 
         function drawDynamic(timestamp = performance.now()) {
-            ctx.clearRect(0, 0, CONSTANTS.CANVAS_WIDTH, CONSTANTS.CANVAS_HEIGHT);
+            ctx.clearRect(0, 0, CONSTANTS.CANVAS_BASE_WIDTH, CONSTANTS.CANVAS_BASE_HEIGHT);
             drawField();
             if (currentScenario) {
                 if (showYellowCircles) {
                     [currentScenario.correctPosition, currentScenario.incorrectPosition].forEach(pos => {
-                        ctx.beginPath(); ctx.arc(pos.x, pos.y, 30, 0, Math.PI * 2);
-                        ctx.strokeStyle = 'yellow'; ctx.lineWidth = 3; ctx.stroke(); ctx.closePath();
+                        ctx.beginPath(); ctx.arc(pos.x, pos.y, 30 / scaleFactor, 0, Math.PI * 2);
+                        ctx.strokeStyle = 'yellow'; ctx.lineWidth = 3 / scaleFactor; ctx.stroke(); ctx.closePath();
                     });
                     if (!isPreviewMode && countdownStartTime) {
                         const elapsed = timestamp - countdownStartTime;
@@ -484,23 +532,23 @@
                     }
                 }
                 drawRunners();
-                ctx.fillStyle = 'black'; ctx.fillRect(100, 450, 120, 30);
-                ctx.fillStyle = 'white'; ctx.font = '20px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'black'; ctx.fillRect(100, 450, 120 / scaleFactor, 30 / scaleFactor);
+                ctx.fillStyle = 'white'; ctx.font = `${20 / scaleFactor}px Arial`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
                 ctx.fillText(`Outs: ${currentScenario.outs}`, 110, 465);
-                ctx.fillStyle = 'black'; ctx.fillRect(100, 480, 200, 50);
-                ctx.fillStyle = 'white'; ctx.font = '16px Arial';
+                ctx.fillStyle = 'black'; ctx.fillRect(100, 480, 200 / scaleFactor, 50 / scaleFactor);
+                ctx.fillStyle = 'white'; ctx.font = `${16 / scaleFactor}px Arial`;
                 ctx.fillText(`Control: ${currentScenario.userControls.label}`, 110, 495);
                 ctx.fillText(`Runners: ${currentScenario.runners.length ? currentScenario.runners.join(', ') : 'None'}`, 110, 515);
                 if (playInProgress && !ball.moving && !showYellowCircles) {
-                    ctx.fillStyle = 'black'; ctx.font = '24px Arial'; ctx.textAlign = 'center';
-                    ctx.fillText('Click to Pitch', 450, 75);
+                    ctx.fillStyle = 'black'; ctx.font = `${24 / scaleFactor}px Arial`; ctx.textAlign = 'center';
+                    ctx.fillText('Tap to Pitch', 450, 75);
                 }
             }
             fielders.forEach(drawCircle);
             drawBall();
             if (message) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(300, 250, 300, 100);
-                ctx.fillStyle = 'white'; ctx.font = '30px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(300, 250, 300 / scaleFactor, 100 / scaleFactor);
+                ctx.fillStyle = 'white'; ctx.font = `${30 / scaleFactor}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(message, 450, 300);
             }
         }
@@ -533,12 +581,12 @@
             const angle = progress * 2 * Math.PI;
             const remainingTime = CONSTANTS.COUNTDOWN_DURATION - elapsed;
             if (remainingTime <= 1000) {
-                ctx.beginPath(); ctx.arc(CONSTANTS.TIMER_X, CONSTANTS.TIMER_Y, CONSTANTS.TIMER_RADIUS - 2.5, 0, Math.PI * 2);
+                ctx.beginPath(); ctx.arc(CONSTANTS.TIMER_X, CONSTANTS.TIMER_Y, (CONSTANTS.TIMER_RADIUS - 2.5) / scaleFactor, 0, Math.PI * 2);
                 ctx.fillStyle = CONSTANTS.COLORS.TIMER_WARNING; ctx.fill(); ctx.closePath();
             }
-            ctx.beginPath(); ctx.arc(CONSTANTS.TIMER_X, CONSTANTS.TIMER_Y, CONSTANTS.TIMER_RADIUS, -Math.PI / 2, -Math.PI / 2 + angle);
-            ctx.lineWidth = 5; ctx.strokeStyle = CONSTANTS.COLORS.TIMER; ctx.stroke(); ctx.closePath();
-            ctx.fillStyle = remainingTime <= 1000 ? 'white' : 'black'; ctx.font = '20px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.beginPath(); ctx.arc(CONSTANTS.TIMER_X, CONSTANTS.TIMER_Y, CONSTANTS.TIMER_RADIUS / scaleFactor, -Math.PI / 2, -Math.PI / 2 + angle);
+            ctx.lineWidth = 5 / scaleFactor; ctx.strokeStyle = CONSTANTS.COLORS.TIMER; ctx.stroke(); ctx.closePath();
+            ctx.fillStyle = remainingTime <= 1000 ? 'white' : 'black'; ctx.font = `${20 / scaleFactor}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(`${Math.ceil(remainingTime / 1000)}`, CONSTANTS.TIMER_X, CONSTANTS.TIMER_Y);
         }
 
@@ -549,12 +597,12 @@
             function animate(currentTime) {
                 const elapsed = currentTime - startTime, progress = Math.min(elapsed / duration, 1);
                 ball.x = startX + progress * deltaX; ball.y = startY + progress * deltaY;
-                if (isHitPhase && currentScenario.hitType === 'fly') ball.radius = originalRadius * (1 + Math.sin(progress * Math.PI) * 0.5);
-                else ball.radius = originalRadius;
+                if (isHitPhase && currentScenario.hitType === 'fly') ball.radius = (originalRadius / scaleFactor) * (1 + Math.sin(progress * Math.PI) * 0.5);
+                else ball.radius = originalRadius / scaleFactor;
                 drawDynamic(currentTime);
                 if (progress < 1) animationFrameId = requestAnimationFrame(animate);
                 else {
-                    ball.x = endX; ball.y = endY; ball.radius = originalRadius; animationFrameId = null; callback();
+                    ball.x = endX; ball.y = endY; ball.radius = originalRadius / scaleFactor; animationFrameId = null; callback();
                 }
             }
             animationFrameId = requestAnimationFrame(animate);
@@ -596,11 +644,13 @@
             else if (waitingForSecondClick) startBallAnimation();
             else if (currentScenario && showYellowCircles) {
                 const rect = canvas.getBoundingClientRect();
-                const mouseX = event.clientX - rect.left, mouseY = event.clientY - rect.top;
+                const touchX = (event.touches ? event.touches[0].clientX : event.clientX) - rect.left;
+                const touchY = (event.touches ? event.touches[0].clientY : event.clientY) - rect.top;
+                const mouseX = touchX / scaleFactor, mouseY = touchY / scaleFactor;
                 const choices = [currentScenario.correctPosition, currentScenario.incorrectPosition];
                 let selectedPosition = null;
                 choices.forEach(pos => {
-                    if (Math.hypot(pos.x - mouseX, pos.y - mouseY) < 30) selectedPosition = pos;
+                    if (Math.hypot(pos.x - mouseX, pos.y - mouseY) < 30 / scaleFactor) selectedPosition = pos;
                 });
                 if (selectedPosition) {
                     clearTimeout(timer); clearInterval(countdownInterval); countdownStartTime = null;
@@ -620,7 +670,7 @@
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             message = null; countdownStartTime = null;
             fielders.forEach(f => { f.x = f.originalX; f.y = f.originalY; f.color = CONSTANTS.COLORS.FIELDER; });
-            ball.x = 450; ball.y = 300; ball.radius = ball.baseRadius; ball.moving = false;
+            ball.x = 450; ball.y = 300; ball.radius = CONSTANTS.BALL_RADIUS / scaleFactor; ball.moving = false;
             currentScenario = null; showYellowCircles = false; waitingForSecondClick = false; playInProgress = false;
             isPreviewMode = false;
             document.getElementById('instructions').textContent = 'Click or press Enter to start, then again to pitch. Choose the correct position!';
@@ -628,6 +678,7 @@
         }
 
         canvas.addEventListener('click', handleInput);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e); }, { passive: false });
         document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !isPreviewMode) handleInput({ clientX: 0, clientY: 0 }); });
         resetButton.addEventListener('click', resetPlay);
 
@@ -637,6 +688,7 @@
                 console.error('Canvas context not available');
                 return;
             }
+            resizeCanvas(); // Set initial size
             drawStatic();
             drawDynamic();
             await loadScenarios();
