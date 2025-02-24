@@ -96,6 +96,7 @@
         <button id="toggleForm" disabled>Create New Scenario</button>
         <button id="toggleList" disabled>View Scenarios</button>
         <button id="authButton">Coach Login</button>
+        <button id="exportButton" disabled>Export Scenarios</button>
     </div>
     <div id="authStatus">Enter password "coach" to edit scenarios</div>
     <div id="instructions">Click or press Enter to start, then again to pitch. Choose the correct position!</div>
@@ -206,32 +207,31 @@
 
         function loadScenarios() {
             return new Promise((resolve) => {
-                const storedScenarios = localStorage.getItem('baseballScenarios');
-                if (storedScenarios) {
-                    scenarios = JSON.parse(storedScenarios);
-                    console.log('Loaded from localStorage:', scenarios.length, 'scenarios');
-                    resolve();
-                } else {
-                    fetch('scenarios.json')
-                        .then(response => {
-                            if (!response.ok) throw new Error('No JSON file found');
-                            return response.json();
-                        })
-                        .then(data => {
-                            scenarios = data;
-                            saveScenarios();
-                            console.log('Loaded from JSON:', scenarios.length, 'scenarios');
-                            resolve();
-                        })
-                        .catch(error => {
+                fetch('scenarios.json')
+                    .then(response => {
+                        if (!response.ok) throw new Error('scenarios.json not found');
+                        return response.json();
+                    })
+                    .then(data => {
+                        scenarios = data;
+                        localStorage.setItem('baseballScenarios', JSON.stringify(scenarios));
+                        console.log('Loaded from GitHub scenarios.json:', scenarios.length, 'scenarios');
+                        resolve();
+                    })
+                    .catch(error => {
+                        const storedScenarios = localStorage.getItem('baseballScenarios');
+                        if (storedScenarios) {
+                            scenarios = JSON.parse(storedScenarios);
+                            console.log('Loaded from localStorage:', scenarios.length, 'scenarios');
+                        } else {
                             scenarios = [
                                 { hitTo: 'leftField', userControls: 'shortstop', correctPosition: 'lfcutoff', incorrectPosition: 'second', outs: 2, runners: ['second'], hitType: 'ground' }
                             ];
-                            saveScenarios();
+                            localStorage.setItem('baseballScenarios', JSON.stringify(scenarios));
                             console.warn('Using default scenario:', error);
-                            resolve();
-                        });
-                }
+                        }
+                        resolve();
+                    });
             });
         }
 
@@ -292,6 +292,7 @@
         }
 
         function previewScenario(index) {
+            fielders.forEach(f => { f.color = CONSTANTS.COLORS.FIELDER; });
             const selected = scenarios[index];
             currentScenario = {
                 hitTo: fieldersMap[selected.hitTo],
@@ -306,9 +307,9 @@
             ball.x = currentScenario.hitTo.x;
             ball.y = currentScenario.hitTo.y;
             ball.moving = false;
-            showYellowCircles = true; // Show correct/incorrect positions
+            showYellowCircles = true;
             isPreviewMode = true;
-            playInProgress = false; // Prevent gameplay
+            playInProgress = false;
             drawDynamic();
             document.getElementById('instructions').textContent = 'Preview Mode - Click "Reset Play" to exit';
             console.log('Previewing scenario:', currentScenario);
@@ -327,6 +328,7 @@
         const scenarioList = document.getElementById('scenarioList');
         const toggleListButton = document.getElementById('toggleList');
         const authButton = document.getElementById('authButton');
+        const exportButton = document.getElementById('exportButton');
         const authStatus = document.getElementById('authStatus');
 
         authButton.addEventListener('click', () => {
@@ -335,6 +337,7 @@
                 isAuthenticated = true;
                 toggleFormButton.disabled = false;
                 toggleListButton.disabled = false;
+                exportButton.disabled = false;
                 authButton.style.display = 'none';
                 authStatus.textContent = 'Authenticated as Coach';
                 authStatus.style.color = '#008800';
@@ -360,6 +363,18 @@
             if (scenarioList.classList.contains('active')) updateScenarioList();
         });
 
+        exportButton.addEventListener('click', () => {
+            if (!isAuthenticated) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(scenarios, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute('href', dataStr);
+            downloadAnchor.setAttribute('download', 'scenarios.json');
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            document.body.removeChild(downloadAnchor);
+            alert('Scenarios exported as scenarios.json. Upload this to your GitHub repo to sync across devices!');
+        });
+
         scenarioForm.addEventListener('submit', (e) => {
             e.preventDefault();
             if (!isAuthenticated) return;
@@ -379,7 +394,7 @@
             if (validateScenario(newScenario)) {
                 scenarios.push(newScenario);
                 saveScenarios();
-                alert('Scenario added and saved permanently!');
+                alert('Scenario added and saved locally! Export to update GitHub.');
                 scenarioForm.reset();
                 console.log('New scenario added:', newScenario);
             } else {
@@ -576,7 +591,7 @@
         }
 
         const handleInput = debounce((event) => {
-            if (isPreviewMode) return; // Disable interaction in preview mode
+            if (isPreviewMode) return;
             if (!playInProgress) startPlay();
             else if (waitingForSecondClick) startBallAnimation();
             else if (currentScenario && showYellowCircles) {
