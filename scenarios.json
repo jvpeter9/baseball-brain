@@ -1,11 +1,24 @@
 [
-    {
-        "hitTo": "leftField",
-        "userControls": "shortstop",
-        "correctPosition": "lfcutoff",
-        "incorrectPosition": "second",
-        "outs": 2,
-        "runners": ["second"],
-        "hitType": "ground"
-    }
+  {
+    "hitTo": "leftField",
+    "userControls": "shortstop",
+    "correctPosition": "lfcutoff",
+    "incorrectPosition": "second",
+    "outs": 2,
+    "runners": [
+      "second"
+    ],
+    "hitType": "ground"
+  },
+  {
+    "hitTo": "shortstop",
+    "userControls": "secondBase",
+    "correctPosition": "second",
+    "incorrectPosition": "pitcherMound",
+    "outs": 1,
+    "runners": [
+      "first"
+    ],
+    "hitType": "ground"
+  }
 ]
