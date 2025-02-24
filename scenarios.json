@@ -1,0 +1,11 @@
+[
+    {
+        "hitTo": "leftField",
+        "userControls": "shortstop",
+        "correctPosition": "lfcutoff",
+        "incorrectPosition": "second",
+        "outs": 2,
+        "runners": ["second"],
+        "hitType": "ground"
+    }
+]
