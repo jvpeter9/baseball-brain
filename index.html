@@ -217,13 +217,13 @@
         let isAuthenticated = false, isPreviewMode = false;
         let scaleFactor = 1;
 
-        const shortstop = { x: 390, y: 200, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'SS' };
-        const firstBase = { x: 575, y: 270, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: '1B' };
+        const shortstop = { x: 400, y: 200, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'SS' };
+        const firstBase = { x: 550, y: 250, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: '1B' };
         const rightField = { x: 650, y: 100, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'RF' };
         const centerField = { x: 450, y: 30, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'CF' };
         const leftField = { x: 250, y: 100, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'LF' };
-        const thirdBase = { x: 325, y: 270, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: '3B' };
-        const secondBase = { x: 510, y: 200, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: '2B' };
+        const thirdBase = { x: 350, y: 300, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: '3B' };
+        const secondBase = { x: 500, y: 200, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: '2B' };
         const pitcher = { x: 450, y: 290, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'P' };
         const catcher = { x: 450, y: 480, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'C' };
         const ball = { x: 450, y: 300, baseRadius: CONSTANTS.BALL_RADIUS, radius: CONSTANTS.BALL_RADIUS, moving: false };
@@ -234,8 +234,8 @@
         const positions = {
             first: { x: 600, y: 300 }, second: { x: 450, y: 150 }, third: { x: 300, y: 300 },
             home: { x: 450, y: 450 }, shortstopCover: { x: 375, y: 150 }, pitcherMound: { x: 450, y: 300 },
-            backupfirst: { x: 725, y: 290 }, backuphome: { x: 450, y: 550 }, lfcutoff: { x: 350, y: 150 },
-            rfcutoff: { x: 550, y: 150 }
+            backupfirst: { x: 675, y: 275 }, backuphome: { x: 450, y: 550 }, lfcutoff: { x: 350, y: 150 },
+            rfcutoff: { x: 550, y: 150 }, backupthird: { x: 250, y: 125 }
         };
 
         const fieldersMap = { shortstop, firstBase, rightField, centerField, leftField, thirdBase, secondBase, pitcher, catcher };
