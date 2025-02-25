@@ -19,6 +19,7 @@
             gap: 20px;
             max-width: 100%;
             margin: 0 auto;
+            position: relative;
         }
         canvas { 
             border: 1px solid black; 
@@ -26,7 +27,14 @@
             max-width: 900px;
             height: auto;
         }
-        #score { font-size: clamp(18px, 5vw, 24px); margin: 10px 0; }
+        #score, #gameTimer { 
+            position: absolute;
+            left: 20px;
+            font-size: clamp(18px, 5vw, 24px);
+            color: #000;
+        }
+        #score { top: 10px; }
+        #gameTimer { top: 40px; }
         #instructions { font-size: clamp(14px, 4vw, 18px); margin: 10px 0; }
         #authStatus { font-size: clamp(12px, 3.5vw, 16px); margin: 10px 0; color: #666; }
         #controls { 
@@ -117,10 +125,25 @@
             border-radius: 5px;
             font-size: clamp(20px, 5vw, 30px);
         }
-        #gameTimer {
-            font-size: clamp(18px, 5vw, 24px);
-            margin: 10px 0;
-            color: #000;
+        .popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 10;
+            max-width: 80%;
+        }
+        .popup button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
         }
         @media (min-width: 768px) {
             #gameContainer {
@@ -138,6 +161,7 @@
     <div id="score" role="status" aria-live="polite">Score: 0</div>
     <div id="gameTimer">Time: 60</div>
     <div id="controls">
+        <button id="instructionsButton">Instructions</button>
         <button id="resetButton" aria-label="Reset Play">Reset Play</button>
         <button id="toggleForm" style="display: none;">Create New Scenario</button>
         <button id="toggleList" style="display: none;">View Scenarios</button>
@@ -150,6 +174,17 @@
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         <div id="scoreboard"></div>
+        <div id="finalScorePopup" class="popup">
+            <h2>Game Over!</h2>
+            <p id="finalScoreText"></p>
+            <button id="playAgainButton">Play Again</button>
+            <button id="closePopupButton">Close</button>
+        </div>
+        <div id="instructionsPopup" class="popup">
+            <h2>Welcome to Baseball Brain</h2>
+            <p>To begin a scenario, click the field of play or hit Enter. The fielder in red will be the fielder you are controlling and will be given two options (yellow circles) of where the fielder should move given the scenario. If you select correctly, you earn a point. The goal is to get as many points as possible in 60 seconds.</p>
+            <button id="closeInstructionsButton">Close</button>
+        </div>
         <div>
             <form id="scenarioForm">
                 <div class="form-group">
@@ -220,6 +255,13 @@
         const gameTimerDisplay = document.getElementById('gameTimer');
         const resetButton = document.getElementById('resetButton');
         const scoreboard = document.getElementById('scoreboard');
+        const instructionsButton = document.getElementById('instructionsButton');
+        const finalScorePopup = document.getElementById('finalScorePopup');
+        const finalScoreText = document.getElementById('finalScoreText');
+        const playAgainButton = document.getElementById('playAgainButton');
+        const closePopupButton = document.getElementById('closePopupButton');
+        const instructionsPopup = document.getElementById('instructionsPopup');
+        const closeInstructionsButton = document.getElementById('closeInstructionsButton');
         let score = 0, playInProgress = false, currentScenario = null, gameTimer = null;
         let gameStartTime = null, showYellowCircles = false;
         let message = null, messageTimer = null, waitingForSecondClick = false, animationFrameId = null;
@@ -595,15 +637,29 @@
             waitingForSecondClick = false;
             drawDynamic();
             setTimeout(() => {
-                const playAgain = confirm(`Game Over! Final Score: ${score}\nWould you like to play again?`);
-                if (playAgain) {
-                    startGame();
-                } else {
-                    resetPlay();
-                }
+                finalScoreText.textContent = `Final Score: ${score}`;
+                finalScorePopup.style.display = 'block';
             }, 100);
             console.log('Game ended');
         }
+
+        playAgainButton.addEventListener('click', () => {
+            finalScorePopup.style.display = 'none';
+            startGame();
+        });
+
+        closePopupButton.addEventListener('click', () => {
+            finalScorePopup.style.display = 'none';
+            resetPlay();
+        });
+
+        instructionsButton.addEventListener('click', () => {
+            instructionsPopup.style.display = 'block';
+        });
+
+        closeInstructionsButton.addEventListener('click', () => {
+            instructionsPopup.style.display = 'none';
+        });
 
         function startPlay() {
             if (!playInProgress || !gameStartTime) return;
