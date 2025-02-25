@@ -144,7 +144,7 @@
         <button id="authButton">Coach Login</button>
         <button id="exportButton" style="display: none;">Export Scenarios</button>
     </div>
-    <div id="authStatus">Enter password "coach" to edit scenarios</div>
+    <div id="authStatus"></div>
     <div id="instructions">Click or press Enter to start the 60-second challenge!</div>
     
     <div id="gameContainer">
@@ -349,6 +349,7 @@
         }
 
         function previewScenario(index) {
+            resetFielders();
             fielders.forEach(f => { f.color = CONSTANTS.COLORS.FIELDER; });
             const selected = scenarios[index];
             currentScenario = {
@@ -557,6 +558,18 @@
             }
         }
 
+        function resetFielders() {
+            fielders.forEach(f => { 
+                f.x = f.originalX; 
+                f.y = f.originalY; 
+                f.color = CONSTANTS.COLORS.FIELDER; 
+            });
+            ball.x = 450; 
+            ball.y = 300; 
+            ball.radius = CONSTANTS.BALL_RADIUS / scaleFactor; 
+            ball.moving = false;
+        }
+
         function startGame() {
             if (playInProgress || !scenarios.length || isPreviewMode) {
                 console.log('Cannot start game: ', { playInProgress, scenarioCount: scenarios.length, isPreviewMode });
@@ -576,12 +589,25 @@
             clearTimeout(gameTimer);
             playInProgress = false;
             gameStartTime = null;
-            showMessage(`Game Over! Final Score: ${score}`);
+            resetFielders();
+            currentScenario = null;
+            showYellowCircles = false;
+            waitingForSecondClick = false;
+            drawDynamic();
+            setTimeout(() => {
+                const playAgain = confirm(`Game Over! Final Score: ${score}\nWould you like to play again?`);
+                if (playAgain) {
+                    startGame();
+                } else {
+                    resetPlay();
+                }
+            }, 100);
             console.log('Game ended');
         }
 
         function startPlay() {
             if (!playInProgress || !gameStartTime) return;
+            resetFielders();
             const selected = scenarios[Math.floor(Math.random() * scenarios.length)];
             currentScenario = {
                 hitTo: fieldersMap[selected.hitTo],
@@ -676,8 +702,7 @@
             if (messageTimer) clearTimeout(messageTimer);
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             message = null; gameStartTime = null;
-            fielders.forEach(f => { f.x = f.originalX; f.y = f.originalY; f.color = CONSTANTS.COLORS.FIELDER; });
-            ball.x = 450; ball.y = 300; ball.radius = CONSTANTS.BALL_RADIUS / scaleFactor; ball.moving = false;
+            resetFielders();
             currentScenario = null; showYellowCircles = false; waitingForSecondClick = false; playInProgress = false;
             isPreviewMode = false; score = 0;
             scoreDisplay.textContent = `Score: ${score}`;
