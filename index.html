@@ -2,21 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Baseball Brain</title>
     <style>
         body { 
             text-align: center; 
             font-family: Arial, sans-serif; 
             margin: 0; 
-            padding: 10px; 
+            padding: 5px; 
             overflow-x: hidden; 
+            background: #f0f0f0;
+            -webkit-user-select: none; /* Prevent text selection on iOS */
+            user-select: none;
         }
         #gameContainer {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
             max-width: 100%;
             margin: 0 auto;
             position: relative;
@@ -26,74 +30,93 @@
             width: 100%;
             max-width: 900px;
             height: auto;
+            touch-action: none; /* Prevent iOS scroll interference */
         }
-        #instructions { font-size: clamp(14px, 4vw, 18px); margin: 10px 0; }
-        #authStatus { font-size: clamp(12px, 3.5vw, 16px); margin: 10px 0; color: #666; }
+        #instructions { 
+            font-size: clamp(12px, 3.5vw, 16px); 
+            margin: 5px 0; 
+        }
+        #authStatus { 
+            font-size: clamp(10px, 3vw, 14px); 
+            margin: 5px 0; 
+            color: #666; 
+        }
         #controls { 
             display: flex; 
             flex-wrap: wrap; 
-            gap: 10px; 
+            gap: 5px; 
             justify-content: center; 
-            margin-bottom: 10px; 
+            margin-bottom: 5px; 
         }
         #controls button { 
-            padding: 10px 15px; 
-            font-size: clamp(14px, 4vw, 16px); 
-            min-width: 100px; 
+            padding: 8px 12px; 
+            font-size: clamp(12px, 3.5vw, 16px); 
+            min-width: 80px; 
+            border-radius: 5px;
+            border: none;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            touch-action: manipulation; /* Ensure touch works */
+        }
+        #controls button:hover {
+            background: #0056b3;
         }
         #scenarioForm, #scenarioList { 
             width: 100%; 
-            max-width: 400px; 
-            padding: 15px; 
+            max-width: 300px; 
+            padding: 10px; 
             border: 1px solid #ccc; 
             background: #f9f9f9; 
             display: none; 
+            box-sizing: border-box;
         }
         #scenarioForm.active, #scenarioList.active { 
             display: block; 
         }
         .form-group { 
-            margin-bottom: 15px; 
+            margin-bottom: 10px; 
             text-align: left; 
         }
         label { 
             display: block; 
-            margin-bottom: 5px; 
-            font-size: clamp(14px, 4vw, 16px); 
+            margin-bottom: 3px; 
+            font-size: clamp(12px, 3.5vw, 14px); 
         }
         select, input[type="number"] { 
             width: 100%; 
-            padding: 8px; 
-            font-size: clamp(14px, 4vw, 16px); 
+            padding: 6px; 
+            font-size: clamp(12px, 3.5vw, 14px); 
+            box-sizing: border-box;
         }
         input[type="checkbox"] { 
-            transform: scale(1.5); 
-            margin-right: 10px; 
+            transform: scale(1.2); 
+            margin-right: 5px; 
         }
         #scenarioList ul { 
             list-style: none; 
             padding: 0; 
-            max-height: 400px; 
+            max-height: 300px; 
             overflow-y: auto; 
         }
         #scenarioList li { 
-            margin: 10px 0; 
-            padding: 10px; 
+            margin: 5px 0; 
+            padding: 8px; 
             background: #fff; 
             border: 1px solid #ddd; 
             display: flex; 
             flex-wrap: wrap; 
             justify-content: space-between; 
             align-items: center; 
-            font-size: clamp(12px, 3.5vw, 14px); 
+            font-size: clamp(10px, 3vw, 12px); 
         }
         #scenarioList button { 
             margin-left: 5px; 
-            padding: 8px 12px; 
+            padding: 6px 10px; 
             border: none; 
             color: white; 
             cursor: pointer; 
-            font-size: clamp(12px, 3.5vw, 14px); 
+            font-size: clamp(10px, 3vw, 12px); 
         }
         #scenarioList .delete-btn { 
             background: #ff4444; 
@@ -109,15 +132,17 @@
         }
         #gameInfo, #scoreboard {
             position: absolute;
-            left: 20px;
+            left: 10px;
             background: rgba(0, 0, 0, 0.7);
             color: white;
-            padding: 15px;
+            padding: 10px;
             border-radius: 5px;
-            font-size: clamp(20px, 5vw, 30px);
+            font-size: clamp(14px, 4vw, 20px);
+            width: clamp(120px, 30vw, 200px);
+            box-sizing: border-box;
         }
-        #gameInfo { top: 20px; }
-        #scoreboard { bottom: 20px; }
+        #gameInfo { top: 10px; }
+        #scoreboard { bottom: 10px; }
         .popup {
             position: absolute;
             top: 50%;
@@ -125,18 +150,35 @@
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.9);
             color: white;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             text-align: center;
             display: none;
             z-index: 10;
-            max-width: 80%;
+            width: 90%;
+            max-width: 300px;
+            box-sizing: border-box;
+        }
+        .popup h2 {
+            font-size: clamp(16px, 5vw, 24px);
+            margin: 0 0 10px;
+        }
+        .popup p {
+            font-size: clamp(12px, 3.5vw, 16px);
+            margin: 0 0 15px;
         }
         .popup button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
+            margin: 5px;
+            padding: 8px 15px;
+            font-size: clamp(12px, 3.5vw, 16px);
             cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+        }
+        .popup button:hover {
+            background: #0056b3;
         }
         @media (min-width: 768px) {
             #gameContainer {
@@ -146,6 +188,21 @@
             canvas {
                 width: 900px;
                 height: 600px;
+            }
+            #gameInfo, #scoreboard {
+                font-size: 20px;
+                width: 200px;
+            }
+            .popup {
+                width: 400px;
+                max-width: 400px;
+            }
+            #controls button {
+                padding: 10px 15px;
+                min-width: 100px;
+            }
+            #scenarioForm, #scenarioList {
+                max-width: 400px;
             }
         }
     </style>
@@ -160,7 +217,7 @@
         <button id="exportButton" style="display: none;">Export Scenarios</button>
     </div>
     <div id="authStatus"></div>
-    <div id="instructions">Click or press Enter to start the 60-second challenge!</div>
+    <div id="instructions">Tap or press Enter to start the 60-second challenge!</div>
     
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
@@ -177,7 +234,7 @@
         </div>
         <div id="instructionsPopup" class="popup">
             <h2>Welcome to Baseball Brain</h2>
-            <p>To begin a scenario, click the field of play or hit Enter. The fielder in red will be the fielder you are controlling and will be given two options (yellow circles) of where the fielder should move given the scenario. If you select correctly, you earn a point. The goal is to get as many points as possible in 60 seconds.</p>
+            <p>To begin a scenario, tap the field or press Enter. The fielder in red is the one you control and will have two options (yellow circles) for where to move. Select correctly to earn a point. Get as many points as possible in 60 seconds!</p>
             <button id="closeInstructionsButton">Close</button>
         </div>
         <div>
@@ -281,14 +338,14 @@
             first: { x: 600, y: 300 }, second: { x: 450, y: 150 }, third: { x: 300, y: 300 },
             home: { x: 450, y: 450 }, shortstopCover: { x: 375, y: 150 }, pitcherMound: { x: 450, y: 300 },
             backupfirst: { x: 675, y: 275 }, backuphome: { x: 450, y: 550 }, lfcutoff: { x: 350, y: 150 },
-            rfcutoff: { x: 550, y: 150 }, backupthird: { x: 225, y: 310 }
+            rfcutoff: { x: 550, y: 150 }, backupthird: { x: 250, y: 125 }
         };
 
         const fieldersMap = { shortstop, firstBase, rightField, centerField, leftField, thirdBase, secondBase, pitcher, catcher };
         let scenarios = [];
 
         function resizeCanvas() {
-            const viewportWidth = window.innerWidth - 20;
+            const viewportWidth = window.innerWidth - 10; // Reduced padding for mobile
             scaleFactor = Math.min(viewportWidth / CONSTANTS.CANVAS_BASE_WIDTH, 1);
             canvas.width = CONSTANTS.CANVAS_BASE_WIDTH * scaleFactor;
             canvas.height = CONSTANTS.CANVAS_BASE_HEIGHT * scaleFactor;
@@ -583,8 +640,12 @@
             fielders.forEach(drawCircle);
             drawBall();
             if (message) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(300, 250, 300 / scaleFactor, 100 / scaleFactor);
-                ctx.fillStyle = 'white'; ctx.font = `${30 / scaleFactor}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; 
+                ctx.fillRect(300, 250, 300 / scaleFactor, 100 / scaleFactor);
+                ctx.fillStyle = 'white'; 
+                ctx.font = `${30 / scaleFactor}px Arial`; 
+                ctx.textAlign = 'center'; 
+                ctx.textBaseline = 'middle';
                 ctx.fillText(message, 450, 300);
             }
             if (currentScenario && gameStartTime) {
@@ -759,13 +820,18 @@
             scoreDisplay.textContent = `Score: ${score}`;
             gameTimerDisplay.textContent = `Time: 60`;
             scoreboard.innerHTML = '';
-            document.getElementById('instructions').textContent = 'Click or press Enter to start the 60-second challenge!';
+            document.getElementById('instructions').textContent = 'Tap or press Enter to start the 60-second challenge!';
             drawStatic(); drawDynamic();
         }
 
         canvas.addEventListener('click', handleInput);
-        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e); }, { passive: false });
-        document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !isPreviewMode) handleInput({ clientX: 0, clientY: 0 }); });
+        canvas.addEventListener('touchstart', (e) => { 
+            e.preventDefault(); 
+            handleInput(e); 
+        }, { passive: false });
+        document.addEventListener('keydown', (e) => { 
+            if (e.key === 'Enter' && !isPreviewMode) handleInput({ clientX: 0, clientY: 0 }); 
+        });
         resetButton.addEventListener('click', resetPlay);
 
         async function init() {
