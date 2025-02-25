@@ -119,5 +119,47 @@
       "first"
     ],
     "hitType": "ground"
+  },
+  {
+    "hitTo": "shortstop",
+    "userControls": "rightField",
+    "correctPosition": "backupfirst",
+    "incorrectPosition": "rfcutoff",
+    "outs": 2,
+    "runners": [
+      "first"
+    ],
+    "hitType": "ground"
+  },
+  {
+    "hitTo": "leftField",
+    "userControls": "firstBase",
+    "correctPosition": "first",
+    "incorrectPosition": "rfcutoff",
+    "outs": 0,
+    "runners": [
+      "second"
+    ],
+    "hitType": "fly"
+  },
+  {
+    "hitTo": "pitcher",
+    "userControls": "firstBase",
+    "correctPosition": "first",
+    "incorrectPosition": "pitcherMound",
+    "outs": 0,
+    "runners": [],
+    "hitType": "ground"
+  },
+  {
+    "hitTo": "leftField",
+    "userControls": "thirdBase",
+    "correctPosition": "third",
+    "incorrectPosition": "lfcutoff",
+    "outs": 1,
+    "runners": [
+      "first"
+    ],
+    "hitType": "base"
   }
 ]
