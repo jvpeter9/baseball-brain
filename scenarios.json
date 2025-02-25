@@ -54,5 +54,70 @@
       "first"
     ],
     "hitType": "fly"
+  },
+  {
+    "hitTo": "firstBase",
+    "userControls": "pitcher",
+    "correctPosition": "first",
+    "incorrectPosition": "pitcherMound",
+    "outs": 2,
+    "runners": [],
+    "hitType": "ground"
+  },
+  {
+    "hitTo": "firstBase",
+    "userControls": "shortstop",
+    "correctPosition": "second",
+    "incorrectPosition": "shortstopCover",
+    "outs": 0,
+    "runners": [
+      "first"
+    ],
+    "hitType": "ground"
+  },
+  {
+    "hitTo": "catcher",
+    "userControls": "firstBase",
+    "correctPosition": "first",
+    "incorrectPosition": "backupfirst",
+    "outs": 1,
+    "runners": [
+      "first"
+    ],
+    "hitType": "fly"
+  },
+  {
+    "hitTo": "pitcher",
+    "userControls": "leftField",
+    "correctPosition": "backupthird",
+    "incorrectPosition": "first",
+    "outs": 1,
+    "runners": [
+      "first",
+      "second"
+    ],
+    "hitType": "ground"
+  },
+  {
+    "hitTo": "centerField",
+    "userControls": "pitcher",
+    "correctPosition": "backupthird",
+    "incorrectPosition": "backuphome",
+    "outs": 0,
+    "runners": [
+      "first"
+    ],
+    "hitType": "ground"
+  },
+  {
+    "hitTo": "thirdBase",
+    "userControls": "secondBase",
+    "correctPosition": "second",
+    "incorrectPosition": "rfcutoff",
+    "outs": 1,
+    "runners": [
+      "first"
+    ],
+    "hitType": "ground"
   }
 ]
