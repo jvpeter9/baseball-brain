@@ -27,14 +27,6 @@
             max-width: 900px;
             height: auto;
         }
-        #score, #gameTimer { 
-            position: absolute;
-            left: 20px;
-            font-size: clamp(18px, 5vw, 24px);
-            color: #000;
-        }
-        #score { top: 10px; }
-        #gameTimer { top: 40px; }
         #instructions { font-size: clamp(14px, 4vw, 18px); margin: 10px 0; }
         #authStatus { font-size: clamp(12px, 3.5vw, 16px); margin: 10px 0; color: #666; }
         #controls { 
@@ -115,9 +107,8 @@
         #scenarioList .view-btn:hover { 
             background: #0000cc; 
         }
-        #scoreboard {
+        #gameInfo, #scoreboard {
             position: absolute;
-            bottom: 20px;
             left: 20px;
             background: rgba(0, 0, 0, 0.7);
             color: white;
@@ -125,6 +116,8 @@
             border-radius: 5px;
             font-size: clamp(20px, 5vw, 30px);
         }
+        #gameInfo { top: 20px; }
+        #scoreboard { bottom: 20px; }
         .popup {
             position: absolute;
             top: 50%;
@@ -158,8 +151,6 @@
     </style>
 </head>
 <body>
-    <div id="score" role="status" aria-live="polite">Score: 0</div>
-    <div id="gameTimer">Time: 60</div>
     <div id="controls">
         <button id="instructionsButton">Instructions</button>
         <button id="resetButton" aria-label="Reset Play">Reset Play</button>
@@ -173,6 +164,10 @@
     
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
+        <div id="gameInfo">
+            <div id="score" role="status" aria-live="polite">Score: 0</div>
+            <div id="gameTimer">Time: 60</div>
+        </div>
         <div id="scoreboard"></div>
         <div id="finalScorePopup" class="popup">
             <h2>Game Over!</h2>
@@ -286,7 +281,7 @@
             first: { x: 600, y: 300 }, second: { x: 450, y: 150 }, third: { x: 300, y: 300 },
             home: { x: 450, y: 450 }, shortstopCover: { x: 375, y: 150 }, pitcherMound: { x: 450, y: 300 },
             backupfirst: { x: 675, y: 275 }, backuphome: { x: 450, y: 550 }, lfcutoff: { x: 350, y: 150 },
-            rfcutoff: { x: 550, y: 150 }, backupthird: { x: 250, y: 125 }
+            rfcutoff: { x: 550, y: 150 }, backupthird: { x: 225, y: 310 }
         };
 
         const fieldersMap = { shortstop, firstBase, rightField, centerField, leftField, thirdBase, secondBase, pitcher, catcher };
