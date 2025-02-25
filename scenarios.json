@@ -133,9 +133,9 @@
   },
   {
     "hitTo": "leftField",
-    "userControls": "firstBase",
-    "correctPosition": "first",
-    "incorrectPosition": "rfcutoff",
+    "userControls": "rightField",
+    "correctPosition": "rfcutoff",
+    "incorrectPosition": "backupfirst",
     "outs": 0,
     "runners": [
       "second"
