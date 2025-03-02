@@ -13,7 +13,7 @@
             padding: 5px; 
             overflow-x: hidden; 
             background: #f0f0f0;
-            -webkit-user-select: none; /* Prevent text selection on iOS */
+            -webkit-user-select: none;
             user-select: none;
         }
         #gameContainer {
@@ -23,14 +23,14 @@
             gap: 10px;
             max-width: 100%;
             margin: 0 auto;
-            position: relative;
         }
         canvas { 
             border: 1px solid black; 
             width: 100%;
             max-width: 900px;
             height: auto;
-            touch-action: none; /* Prevent iOS scroll interference */
+            touch-action: none;
+            background: #90EE90;
         }
         #instructions { 
             font-size: clamp(12px, 3.5vw, 16px); 
@@ -57,7 +57,7 @@
             background: #007bff;
             color: white;
             cursor: pointer;
-            touch-action: manipulation; /* Ensure touch works */
+            touch-action: manipulation;
         }
         #controls button:hover {
             background: #0056b3;
@@ -70,6 +70,7 @@
             background: #f9f9f9; 
             display: none; 
             box-sizing: border-box;
+            margin-top: 10px;
         }
         #scenarioForm.active, #scenarioList.active { 
             display: block; 
@@ -115,7 +116,7 @@
             padding: 6px 10px; 
             border: none; 
             color: white; 
-            cursor: pointer; 
+            cursor: pointer;
             font-size: clamp(10px, 3vw, 12px); 
         }
         #scenarioList .delete-btn { 
@@ -131,20 +132,24 @@
             background: #0000cc; 
         }
         #gameInfo, #scoreboard {
-            position: absolute;
-            left: 10px;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
             background: rgba(0, 0, 0, 0.7);
             color: white;
             padding: 10px;
             border-radius: 5px;
             font-size: clamp(14px, 4vw, 20px);
-            width: clamp(120px, 30vw, 200px);
             box-sizing: border-box;
+            margin: 5px 0;
         }
-        #gameInfo { top: 10px; }
-        #scoreboard { bottom: 10px; }
+        #gameTimer.low-time {
+            color: red;
+        }
         .popup {
-            position: absolute;
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -181,17 +186,12 @@
             background: #0056b3;
         }
         @media (min-width: 768px) {
-            #gameContainer {
-                flex-direction: row;
-                justify-content: center;
-            }
             canvas {
                 width: 900px;
                 height: 600px;
             }
             #gameInfo, #scoreboard {
                 font-size: 20px;
-                width: 200px;
             }
             .popup {
                 width: 400px;
@@ -208,6 +208,7 @@
     </style>
 </head>
 <body>
+    <!-- HTML structure remains unchanged -->
     <div id="controls">
         <button id="instructionsButton">Instructions</button>
         <button id="resetButton" aria-label="Reset Play">Reset Play</button>
@@ -234,7 +235,7 @@
         </div>
         <div id="instructionsPopup" class="popup">
             <h2>Welcome to Baseball Brain</h2>
-            <p>To begin a scenario, tap the field or press Enter. The fielder in red is the one you control and will have two options (yellow circles) for where to move. Select correctly to earn a point. Get as many points as possible in 60 seconds!</p>
+            <p>To begin a scenario, tap the field or press Enter. The fielder in red is the one you control and will have three options (yellow circles) for where to move. Select one, then tap again to see results (green = correct, red = incorrect) and proceed to the next scenario. Correct answers add 5 seconds to your time. Get as many points as possible in 60 seconds!</p>
             <button id="closeInstructionsButton">Close</button>
         </div>
         <div>
@@ -288,7 +289,7 @@
             CANVAS_BASE_HEIGHT: 600,
             FIELDER_RADIUS: 15,
             BALL_RADIUS: 8,
-            RUNNER_RADIUS: 10,
+            RUNNER_RADIUS: 11.5,
             COLORS: {
                 FIELDER: 'darkblue',
                 USER_CONTROL: 'red',
@@ -298,7 +299,8 @@
                 DARK_GREEN: '#228B22',
                 DIRT: '#D2B48C'
             },
-            GAME_DURATION: 60000 // 60 seconds
+            GAME_DURATION: 60000,
+            BONUS_TIME: 5000
         };
 
         const canvas = document.getElementById('gameCanvas');
@@ -316,9 +318,13 @@
         const closeInstructionsButton = document.getElementById('closeInstructionsButton');
         let score = 0, playInProgress = false, currentScenario = null, gameTimer = null;
         let gameStartTime = null, showYellowCircles = false;
-        let message = null, messageTimer = null, waitingForSecondClick = false, animationFrameId = null;
+        let waitingForSecondClick = false, animationFrameId = null;
         let isAuthenticated = false, isPreviewMode = false;
         let scaleFactor = 1;
+        let runnerAnimationFrameId = null;
+        let showResults = false;
+        let scenarioQueue = []; // Queue of scenario indices
+        let gameEndTime = null;
 
         const shortstop = { x: 400, y: 175, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'SS' };
         const firstBase = { x: 575, y: 250, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: '1B' };
@@ -344,8 +350,36 @@
         const fieldersMap = { shortstop, firstBase, rightField, centerField, leftField, thirdBase, secondBase, pitcher, catcher };
         let scenarios = [];
 
+        const baseOrder = {
+            'home': 'first',
+            'first': 'second',
+            'second': 'third',
+            'third': 'home'
+        };
+
+        function getRandomPosition(excludePositions) {
+            const positionKeys = Object.keys(positions);
+            const availablePositions = positionKeys.filter(key => 
+                !excludePositions.some(pos => pos.x === positions[key].x && pos.y === positions[key].y)
+            );
+            const randomKey = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+            return positions[randomKey];
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function initializeScenarioQueue() {
+            scenarioQueue = shuffleArray(Array.from({ length: scenarios.length }, (_, i) => i));
+        }
+
         function resizeCanvas() {
-            const viewportWidth = window.innerWidth - 10; // Reduced padding for mobile
+            const viewportWidth = window.innerWidth - 10;
             scaleFactor = Math.min(viewportWidth / CONSTANTS.CANVAS_BASE_WIDTH, 1);
             canvas.width = CONSTANTS.CANVAS_BASE_WIDTH * scaleFactor;
             canvas.height = CONSTANTS.CANVAS_BASE_HEIGHT * scaleFactor;
@@ -451,9 +485,11 @@
                 userControls: fieldersMap[selected.userControls],
                 correctPosition: positions[selected.correctPosition],
                 incorrectPosition: positions[selected.incorrectPosition],
+                randomPosition: getRandomPosition([positions[selected.correctPosition], positions[selected.incorrectPosition]]),
                 outs: selected.outs,
-                runners: selected.runners,
-                hitType: selected.hitType
+                runners: [...selected.runners, 'home'],
+                hitType: selected.hitType,
+                runnerPositions: {}
             };
             currentScenario.userControls.color = CONSTANTS.COLORS.USER_CONTROL;
             ball.x = currentScenario.hitTo.x;
@@ -462,6 +498,7 @@
             showYellowCircles = true;
             isPreviewMode = true;
             playInProgress = false;
+            resetRunnerPositions();
             drawDynamic();
             document.getElementById('instructions').textContent = 'Preview Mode - Tap "Reset Play" to exit';
             console.log('Previewing scenario:', currentScenario);
@@ -604,14 +641,63 @@
             ctx.quadraticCurveTo(ball.x, ball.y, ball.x + ball.radius / scaleFactor, ball.y - ball.radius / (2 * scaleFactor)); ctx.stroke();
         }
 
+        function resetRunnerPositions() {
+            if (currentScenario?.runners) {
+                currentScenario.runnerPositions = {};
+                currentScenario.runners.forEach(base => {
+                    const basePos = positions[base];
+                    currentScenario.runnerPositions[base] = { x: basePos.x, y: basePos.y };
+                });
+            }
+        }
+
+        function animateRunners() {
+            if (!currentScenario?.runners || !ball.moving) return;
+            if (runnerAnimationFrameId) cancelAnimationFrame(runnerAnimationFrameId);
+
+            const duration = 1000;
+            const startTime = performance.now();
+
+            function animate(timestamp) {
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                currentScenario.runners.forEach(base => {
+                    const startPos = positions[base];
+                    const nextBase = baseOrder[base];
+                    const endPos = positions[nextBase];
+                    const offsetX = (endPos.x - startPos.x) * 0.25;
+                    const offsetY = (endPos.y - startPos.y) * 0.25;
+
+                    currentScenario.runnerPositions[base].x = startPos.x + (offsetX * progress);
+                    currentScenario.runnerPositions[base].y = startPos.y + (offsetY * progress);
+                });
+
+                drawDynamic(timestamp);
+
+                if (progress < 1) {
+                    runnerAnimationFrameId = requestAnimationFrame(animate);
+                } else {
+                    runnerAnimationFrameId = null;
+                }
+            }
+
+            runnerAnimationFrameId = requestAnimationFrame(animate);
+        }
+
         function drawRunners() {
             if (currentScenario?.runners) {
                 currentScenario.runners.forEach(base => {
-                    const basePos = positions[base];
-                    if (!basePos) return console.warn(`Invalid base: ${base}`);
-                    const runnerX = basePos.x + 10 / scaleFactor, runnerY = basePos.y + 10 / scaleFactor;
-                    ctx.beginPath(); ctx.arc(runnerX, runnerY, CONSTANTS.RUNNER_RADIUS / scaleFactor, 0, Math.PI * 2);
-                    ctx.fillStyle = CONSTANTS.COLORS.RUNNER; ctx.fill(); ctx.closePath();
+                    if (!currentScenario.runnerPositions[base]) return console.warn(`Invalid runner position for base: ${base}`);
+                    const { x, y } = currentScenario.runnerPositions[base];
+                    ctx.beginPath();
+                    ctx.arc(x, y, CONSTANTS.RUNNER_RADIUS / scaleFactor, 0, Math.PI * 2);
+                    ctx.fillStyle = CONSTANTS.COLORS.RUNNER;
+                    ctx.fill();
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 1 / scaleFactor;
+                    ctx.stroke();
+                    ctx.closePath();
                 });
             }
         }
@@ -625,34 +711,43 @@
             ctx.clearRect(0, 0, CONSTANTS.CANVAS_BASE_WIDTH, CONSTANTS.CANVAS_BASE_HEIGHT);
             drawField();
             if (currentScenario) {
-                if (showYellowCircles) {
-                    [currentScenario.correctPosition, currentScenario.incorrectPosition].forEach(pos => {
-                        ctx.beginPath(); ctx.arc(pos.x, pos.y, 30 / scaleFactor, 0, Math.PI * 2);
-                        ctx.strokeStyle = 'yellow'; ctx.lineWidth = 3 / scaleFactor; ctx.stroke(); ctx.closePath();
+                if (showYellowCircles || showResults) {
+                    const positionsToDraw = [currentScenario.correctPosition, currentScenario.incorrectPosition, currentScenario.randomPosition];
+                    positionsToDraw.forEach(pos => {
+                        ctx.beginPath();
+                        ctx.arc(pos.x, pos.y, 30 / scaleFactor, 0, Math.PI * 2);
+                        if (showResults) {
+                            ctx.strokeStyle = (pos === currentScenario.correctPosition) ? 'green' : 'red';
+                        } else {
+                            ctx.strokeStyle = 'yellow';
+                        }
+                        ctx.lineWidth = 3 / scaleFactor;
+                        ctx.stroke();
+                        ctx.closePath();
                     });
                 }
                 drawRunners();
-                if (playInProgress && !ball.moving && !showYellowCircles) {
+                if (ball.moving) animateRunners();
+                if (playInProgress && !ball.moving && !showYellowCircles && !showResults) {
                     ctx.fillStyle = 'black'; ctx.font = `${24 / scaleFactor}px Arial`; ctx.textAlign = 'center';
                     ctx.fillText('Tap to Pitch', 450, 75);
+                }
+                if (showResults) {
+                    ctx.fillStyle = 'black'; ctx.font = `${24 / scaleFactor}px Arial`; ctx.textAlign = 'center';
+                    ctx.fillText('Tap to Continue', 450, 75);
                 }
             }
             fielders.forEach(drawCircle);
             drawBall();
-            if (message) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; 
-                ctx.fillRect(300, 250, 300 / scaleFactor, 100 / scaleFactor);
-                ctx.fillStyle = 'white'; 
-                ctx.font = `${30 / scaleFactor}px Arial`; 
-                ctx.textAlign = 'center'; 
-                ctx.textBaseline = 'middle';
-                ctx.fillText(message, 450, 300);
-            }
             if (currentScenario && gameStartTime) {
                 const elapsed = timestamp - gameStartTime;
-                const remainingTime = Math.max(0, Math.ceil((CONSTANTS.GAME_DURATION - elapsed) / 1000));
+                const remainingTime = Math.max(0, Math.ceil((gameEndTime - timestamp) / 1000));
                 gameTimerDisplay.textContent = `Time: ${remainingTime}`;
-                scoreboard.innerHTML = `Outs: ${currentScenario.outs}<br>Control: ${currentScenario.userControls.label}<br>Runners: ${currentScenario.runners.length ? currentScenario.runners.join(', ') : 'None'}`;
+                if (remainingTime < 10) {
+                    gameTimerDisplay.classList.add('low-time');
+                } else {
+                    gameTimerDisplay.classList.remove('low-time');
+                }
             }
         }
 
@@ -666,6 +761,7 @@
             ball.y = 300; 
             ball.radius = CONSTANTS.BALL_RADIUS / scaleFactor; 
             ball.moving = false;
+            if (currentScenario) resetRunnerPositions();
         }
 
         function startGame() {
@@ -675,7 +771,10 @@
             }
             playInProgress = true;
             gameStartTime = performance.now();
+            gameEndTime = gameStartTime + CONSTANTS.GAME_DURATION;
             score = 0;
+            scenarioQueue = [];
+            initializeScenarioQueue(); // Initialize with shuffled scenarios
             scoreDisplay.textContent = `Score: ${score}`;
             gameTimer = setTimeout(endGame, CONSTANTS.GAME_DURATION);
             startPlay();
@@ -687,10 +786,14 @@
             clearTimeout(gameTimer);
             playInProgress = false;
             gameStartTime = null;
+            gameEndTime = null;
             resetFielders();
             currentScenario = null;
             showYellowCircles = false;
             waitingForSecondClick = false;
+            showResults = false;
+            scenarioQueue = [];
+            if (runnerAnimationFrameId) cancelAnimationFrame(runnerAnimationFrameId);
             drawDynamic();
             setTimeout(() => {
                 finalScoreText.textContent = `Final Score: ${score}`;
@@ -720,21 +823,30 @@
         function startPlay() {
             if (!playInProgress || !gameStartTime) return;
             resetFielders();
-            const selected = scenarios[Math.floor(Math.random() * scenarios.length)];
+            if (scenarioQueue.length === 0) {
+                initializeScenarioQueue(); // Reshuffle when queue is empty
+                console.log('Scenario queue refilled and shuffled');
+            }
+            const nextIndex = scenarioQueue.shift(); // Take first from queue
+            const selected = scenarios[nextIndex];
             currentScenario = {
                 hitTo: fieldersMap[selected.hitTo],
                 userControls: fieldersMap[selected.userControls],
                 correctPosition: positions[selected.correctPosition],
                 incorrectPosition: positions[selected.incorrectPosition],
+                randomPosition: getRandomPosition([positions[selected.correctPosition], positions[selected.incorrectPosition]]),
                 outs: selected.outs,
-                runners: selected.runners,
-                hitType: selected.hitType
+                runners: [...selected.runners, 'home'],
+                hitType: selected.hitType,
+                runnerPositions: {}
             };
             currentScenario.userControls.color = CONSTANTS.COLORS.USER_CONTROL;
+            resetRunnerPositions();
             showYellowCircles = false;
             waitingForSecondClick = true;
+            showResults = false;
             drawDynamic();
-            console.log('Play started with scenario:', currentScenario);
+            console.log('Play started with scenario index:', nextIndex, 'Remaining in queue:', scenarioQueue.length);
         }
 
         function animateBall(startX, startY, endX, endY, callback, isHitPhase = false) {
@@ -757,22 +869,22 @@
 
         function startBallAnimation() {
             if (!playInProgress || !waitingForSecondClick) return;
-            waitingForSecondClick = false; ball.moving = true;
+            waitingForSecondClick = false;
+            ball.moving = true;
             animateBall(450, 300, 450, 450, () => {
                 animateBall(450, 450, currentScenario.hitTo.x, currentScenario.hitTo.y, () => {
-                    ball.moving = false; showYellowCircles = true; drawDynamic();
+                    ball.moving = false;
+                    showYellowCircles = true;
+                    drawDynamic();
                 }, true);
             }, false);
         }
 
-        function showMessage(text) {
-            message = text; drawDynamic();
-            if (messageTimer) clearTimeout(messageTimer);
-            messageTimer = setTimeout(() => { 
-                message = null; 
-                if (playInProgress && gameStartTime) startPlay(); 
-                else drawDynamic(); 
-            }, 1500);
+        function extendGameTime() {
+            gameEndTime += CONSTANTS.BONUS_TIME;
+            clearTimeout(gameTimer);
+            gameTimer = setTimeout(endGame, gameEndTime - performance.now());
+            console.log('Game time extended by 5 seconds. New end time:', new Date(gameEndTime));
         }
 
         function debounce(fn, delay) {
@@ -782,14 +894,16 @@
 
         const handleInput = debounce((event) => {
             if (isPreviewMode) return;
-            if (!playInProgress && !gameStartTime) startGame();
-            else if (waitingForSecondClick) startBallAnimation();
-            else if (currentScenario && showYellowCircles) {
+            if (!playInProgress && !gameStartTime) {
+                startGame();
+            } else if (waitingForSecondClick) {
+                startBallAnimation();
+            } else if (currentScenario && showYellowCircles && !showResults) {
                 const rect = canvas.getBoundingClientRect();
                 const touchX = (event.touches ? event.touches[0].clientX : event.clientX) - rect.left;
                 const touchY = (event.touches ? event.touches[0].clientY : event.clientY) - rect.top;
                 const mouseX = touchX / scaleFactor, mouseY = touchY / scaleFactor;
-                const choices = [currentScenario.correctPosition, currentScenario.incorrectPosition];
+                const choices = [currentScenario.correctPosition, currentScenario.incorrectPosition, currentScenario.randomPosition];
                 let selectedPosition = null;
                 choices.forEach(pos => {
                     if (Math.hypot(pos.x - mouseX, pos.y - mouseY) < 30 / scaleFactor) selectedPosition = pos;
@@ -797,31 +911,42 @@
                 if (selectedPosition) {
                     currentScenario.userControls.x = selectedPosition.x; 
                     currentScenario.userControls.y = selectedPosition.y;
-                    drawDynamic();
-                    if (selectedPosition === currentScenario.correctPosition) { 
-                        score += 1; 
-                        showMessage('Correct!'); 
-                    } else { 
-                        showMessage('Incorrect!'); 
+                    showYellowCircles = false;
+                    showResults = true;
+                    if (selectedPosition === currentScenario.correctPosition) {
+                        score += 1;
+                        extendGameTime();
                     }
                     scoreDisplay.textContent = `Score: ${score}`;
+                    drawDynamic();
                 }
+            } else if (showResults) {
+                startPlay();
             }
         }, 200);
 
         function resetPlay() {
             if (gameTimer) clearTimeout(gameTimer);
-            if (messageTimer) clearTimeout(messageTimer);
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            message = null; gameStartTime = null;
+            if (runnerAnimationFrameId) cancelAnimationFrame(runnerAnimationFrameId);
+            gameStartTime = null;
+            gameEndTime = null;
             resetFielders();
-            currentScenario = null; showYellowCircles = false; waitingForSecondClick = false; playInProgress = false;
-            isPreviewMode = false; score = 0;
+            currentScenario = null;
+            showYellowCircles = false;
+            waitingForSecondClick = false;
+            playInProgress = false;
+            isPreviewMode = false;
+            showResults = false;
+            scenarioQueue = [];
+            score = 0;
             scoreDisplay.textContent = `Score: ${score}`;
             gameTimerDisplay.textContent = `Time: 60`;
+            gameTimerDisplay.classList.remove('low-time');
             scoreboard.innerHTML = '';
             document.getElementById('instructions').textContent = 'Tap or press Enter to start the 60-second challenge!';
-            drawStatic(); drawDynamic();
+            drawStatic();
+            drawDynamic();
         }
 
         canvas.addEventListener('click', handleInput);
@@ -849,7 +974,9 @@
             console.log('Initialization complete');
         }
 
-        init().catch(error => console.error('Init failed:', error));
+        window.addEventListener('load', () => {
+            init().catch(error => console.error('Init failed:', error));
+        });
     </script>
 </body>
 </html>
