@@ -1,149 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Previous head content remains unchanged -->
+    <meta charset="UTF-8">
+    <title>Game</title>
+    <style>
+        canvas { display: block; margin: 0 auto; border: 1px solid black; }
+    </style>
 </head>
 <body>
-    <!-- Previous HTML content remains unchanged -->
+    <canvas id="gameCanvas" width="900" height="600"></canvas>
+    <div id="scoreboard"></div>
+    <div id="scoreDisplay"></div>
+    <div id="gameTimerDisplay"></div>
+    <div id="instructions"></div>
     <script>
-        // Previous CONSTANTS and initial variable declarations remain unchanged
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const CONSTANTS = { CANVAS_BASE_WIDTH: 900, CANVAS_BASE_HEIGHT: 600, COLORS: { USER_CONTROL: 'blue' } };
+        let scaleFactor = 1, currentScenario = null, showYellowCircles = false, showResults = false;
+        let playInProgress = false, gameStartTime = null, gameEndTime = null, ball = { x: 0, y: 0, moving: false };
+        let fielders = [], scenarioQueue = [], score = 0, hitTypeDisplay = '';
+        const scoreboard = document.getElementById('scoreboard');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const gameTimerDisplay = document.getElementById('gameTimerDisplay');
 
-        // Add new variable for hit type display
-        let hitTypeDisplay = '';
+        function drawField() { ctx.fillStyle = 'green'; ctx.fillRect(0, 0, 900, 600); }
+        function drawRunners() {}
+        function animateRunners() {}
+        function drawCircle(f) { ctx.beginPath(); ctx.arc(f.x, f.y, 10, 0, Math.PI * 2); ctx.fillStyle = f.color; ctx.fill(); ctx.closePath(); }
+        function drawBall() { ctx.beginPath(); ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); ctx.fillStyle = 'white'; ctx.fill(); ctx.closePath(); }
+        function resetFielders() { fielders = [{ x: 100, y: 100, color: 'gray' }]; }
+        function initializeScenarioQueue() { scenarioQueue = [0]; }
+        function getRandomPosition() { return { x: 450, y: 300 }; }
 
-        // Modified drawDynamic function to show hit type
         function drawDynamic(timestamp = performance.now()) {
-            ctx.clearRect(0, 0, CONSTANTS.CANVAS_BASE_WIDTH, CONSTANTS.CANVAS_BASE_HEIGHT);
+            ctx.clearRect(0, 0, 900, 600);
             drawField();
             if (currentScenario) {
-                if (showYellowCircles || showResults) {
-                    const positionsToDraw = [currentScenario.correctPosition, currentScenario.incorrectPosition, currentScenario.randomPosition];
-                    positionsToDraw.forEach(pos => {
-                        ctx.beginPath();
-                        ctx.arc(pos.x, pos.y, 30 / scaleFactor, 0, Math.PI * 2);
-                        if (showResults) {
-                            ctx.strokeStyle = (pos === currentScenario.correctPosition) ? 'green' : 'red';
-                        } else {
-                            ctx.strokeStyle = 'yellow';
-                        }
-                        ctx.lineWidth = 3 / scaleFactor;
-                        ctx.stroke();
-                        ctx.closePath();
-                    });
-                }
-                drawRunners();
-                if (ball.moving) animateRunners();
-                
-                // Display hit type when ball reaches hit position
-                if (!showYellowCircles && !showResults && currentScenario.hitType) {
-                    ctx.fillStyle = 'black';
-                    ctx.font = `${36 / scaleFactor}px Arial`;
-                    ctx.textAlign = 'center';
-                    if (currentScenario.hitType === 'fly') {
-                        hitTypeDisplay = 'Fly Ball';
-                    } else if (currentScenario.hitType === 'ground') {
-                        hitTypeDisplay = 'Ground Ball';
-                    } else {
-                        hitTypeDisplay = '';
-                    }
-                    if (hitTypeDisplay && ball.x === currentScenario.hitTo.x && ball.y === currentScenario.hitTo.y) {
-                        ctx.fillText(hitTypeDisplay, 450, 75);
-                    }
-                }
-                
-                if (playInProgress && !ball.moving && !showYellowCircles && !showResults) {
-                    ctx.fillStyle = 'black';
-                    ctx.font = `${24 / scaleFactor}px Arial`;
-                    ctx.textAlign = 'center';
-                    ctx.fillText('Tap to Pitch', 450, 75);
-                }
-                if (showResults) {
-                    ctx.fillStyle = 'black';
-                    ctx.font = `${24 / scaleFactor}px Arial`;
-                    ctx.textAlign = 'center';
-                    ctx.fillText('Tap to Continue', 450, 75);
-                }
-                
-                // Update scoreboard with outs and runners
-                if (currentScenario) {
-                    let runnersText = 'Runners: ';
-                    runnersText += currentScenario.runners.length > 1 ? 
-                        currentScenario.runners.filter(r => r !== 'home').join(', ') : 'None';
-                    scoreboard.textContent = `Outs: ${currentScenario.outs} | ${runnersText}`;
-                }
+                // Your drawDynamic logic here
+                ctx.fillStyle = 'black';
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Running', 450, 75);
             }
             fielders.forEach(drawCircle);
             drawBall();
-            if (currentScenario && gameStartTime) {
-                const elapsed = timestamp - gameStartTime;
-                const remainingTime = Math.max(0, Math.ceil((gameEndTime - timestamp) / 1000));
-                gameTimerDisplay.textContent = `Time: ${remainingTime}`;
-                if (remainingTime < 10) {
-                    gameTimerDisplay.classList.add('low-time');
-                } else {
-                    gameTimerDisplay.classList.remove('low-time');
-                }
-            }
+            requestAnimationFrame(drawDynamic); // Keep rendering
         }
 
-        // Modified resetPlay function to clear scoreboard
         function resetPlay() {
-            if (gameTimer) clearTimeout(gameTimer);
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            if (runnerAnimationFrameId) cancelAnimationFrame(runnerAnimationFrameId);
             gameStartTime = null;
             gameEndTime = null;
             resetFielders();
             currentScenario = null;
-            showYellowCircles = false;
-            waitingForSecondClick = false;
             playInProgress = false;
-            isPreviewMode = false;
-            showResults = false;
-            scenarioQueue = [];
             score = 0;
             scoreDisplay.textContent = `Score: ${score}`;
-            gameTimerDisplay.textContent = `Time: 60`;
-            gameTimerDisplay.classList.remove('low-time');
-            scoreboard.textContent = 'Outs: 0 | Runners: None'; // Reset scoreboard
-            document.getElementById('instructions').textContent = 'Tap or press Enter to start the 60-second challenge!';
-            hitTypeDisplay = ''; // Reset hit type display
-            drawStatic();
+            gameTimerDisplay.textContent = 'Time: 60';
+            scoreboard.textContent = 'Outs: 0 | Runners: None';
+            document.getElementById('instructions').textContent = 'Tap or press Enter to start!';
             drawDynamic();
         }
 
-        // Modified startPlay function to ensure scoreboard updates
         function startPlay() {
             if (!playInProgress || !gameStartTime) return;
             resetFielders();
-            if (scenarioQueue.length === 0) {
-                initializeScenarioQueue();
-                console.log('Scenario queue refilled and shuffled');
-            }
-            const nextIndex = scenarioQueue.shift();
-            const selected = scenarios[nextIndex];
-            currentScenario = {
-                hitTo: fieldersMap[selected.hitTo],
-                userControls: fieldersMap[selected.userControls],
-                correctPosition: positions[selected.correctPosition],
-                incorrectPosition: positions[selected.incorrectPosition],
-                randomPosition: getRandomPosition([positions[selected.correctPosition], positions[selected.incorrectPosition]]),
-                outs: selected.outs,
-                runners: [...selected.runners, 'home'],
-                hitType: selected.hitType,
-                runnerPositions: {}
-            };
-            currentScenario.userControls.color = CONSTANTS.COLORS.USER_CONTROL;
-            resetRunnerPositions();
-            showYellowCircles = false;
-            waitingForSecondClick = true;
-            showResults = false;
-            hitTypeDisplay = ''; // Reset hit type display for new play
+            currentScenario = { hitTo: { x: 450, y: 300 }, correctPosition: { x: 450, y: 300 }, incorrectPosition: { x: 200, y: 300 }, randomPosition: { x: 600, y: 300 }, outs: 0, runners: [], hitType: 'fly' };
             drawDynamic();
-            console.log('Play started with scenario index:', nextIndex, 'Remaining in queue:', scenarioQueue.length);
         }
 
-        // Rest of the code remains unchanged
+        function init() {
+            playInProgress = true;
+            gameStartTime = performance.now();
+            gameEndTime = gameStartTime + 60000;
+            resetPlay();
+            requestAnimationFrame(drawDynamic);
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
