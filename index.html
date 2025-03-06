@@ -2,82 +2,981 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Baseball Brain</title>
     <style>
-        canvas { display: block; margin: 0 auto; border: 1px solid black; }
+        body { 
+            text-align: center; 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 5px; 
+            overflow-x: hidden; 
+            background: #f0f0f0;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        #gameContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        canvas { 
+            border: 1px solid black; 
+            width: 100%;
+            max-width: 900px;
+            height: auto;
+            touch-action: none;
+            background: #90EE90;
+        }
+        #instructions { 
+            font-size: clamp(12px, 3.5vw, 16px); 
+            margin: 5px 0; 
+        }
+        #authStatus { 
+            font-size: clamp(10px, 3vw, 14px); 
+            margin: 5px 0; 
+            color: #666; 
+        }
+        #controls { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 5px; 
+            justify-content: center; 
+            margin-bottom: 5px; 
+        }
+        #controls button { 
+            padding: 8px 12px; 
+            font-size: clamp(12px, 3.5vw, 16px); 
+            min-width: 80px; 
+            border-radius: 5px;
+            border: none;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        #controls button:hover {
+            background: #0056b3;
+        }
+        #scenarioForm, #scenarioList { 
+            width: 100%; 
+            max-width: 300px; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            background: #f9f9f9; 
+            display: none; 
+            box-sizing: border-box;
+            margin-top: 10px;
+        }
+        #scenarioForm.active, #scenarioList.active { 
+            display: block; 
+        }
+        .form-group { 
+            margin-bottom: 10px; 
+            text-align: left; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 3px; 
+            font-size: clamp(12px, 3.5vw, 14px); 
+        }
+        select, input[type="number"] { 
+            width: 100%; 
+            padding: 6px; 
+            font-size: clamp(12px, 3.5vw, 14px); 
+            box-sizing: border-box;
+        }
+        input[type="checkbox"] { 
+            transform: scale(1.2); 
+            margin-right: 5px; 
+        }
+        #scenarioList ul { 
+            list-style: none; 
+            padding: 0; 
+            max-height: 300px; 
+            overflow-y: auto; 
+        }
+        #scenarioList li { 
+            margin: 5px 0; 
+            padding: 8px; 
+            background: #fff; 
+            border: 1px solid #ddd; 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: space-between; 
+            align-items: center; 
+            font-size: clamp(10px, 3vw, 12px); 
+        }
+        #scenarioList button { 
+            margin-left: 5px; 
+            padding: 6px 10px; 
+            border: none; 
+            color: white; 
+            cursor: pointer;
+            font-size: clamp(10px, 3vw, 12px); 
+        }
+        #scenarioList .delete-btn { 
+            background: #ff4444; 
+        }
+        #scenarioList .delete-btn:hover { 
+            background: #cc0000; 
+        }
+        #scenarioList .view-btn { 
+            background: #4444ff; 
+        }
+        #scenarioList .view-btn:hover { 
+            background: #0000cc; 
+        }
+        #gameInfo, #scoreboard {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: clamp(14px, 4vw, 20px);
+            box-sizing: border-box;
+            margin: 5px 0;
+        }
+        #gameTimer.low-time {
+            color: red;
+        }
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 10;
+            width: 90%;
+            max-width: 300px;
+            box-sizing: border-box;
+        }
+        .popup h2 {
+            font-size: clamp(16px, 5vw, 24px);
+            margin: 0 0 10px;
+        }
+        .popup p {
+            font-size: clamp(12px, 3.5vw, 16px);
+            margin: 0 0 15px;
+        }
+        .popup button {
+            margin: 5px;
+            padding: 8px 15px;
+            font-size: clamp(12px, 3.5vw, 16px);
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+        }
+        .popup button:hover {
+            background: #0056b3;
+        }
+        @media (min-width: 768px) {
+            canvas {
+                width: 900px;
+                height: 600px;
+            }
+            #gameInfo, #scoreboard {
+                font-size: 20px;
+            }
+            .popup {
+                width: 400px;
+                max-width: 400px;
+            }
+            #controls button {
+                padding: 10px 15px;
+                min-width: 100px;
+            }
+            #scenarioForm, #scenarioList {
+                max-width: 400px;
+            }
+        }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="900" height="600"></canvas>
-    <div id="scoreboard"></div>
-    <div id="scoreDisplay"></div>
-    <div id="gameTimerDisplay"></div>
-    <div id="instructions"></div>
+    <!-- HTML structure remains unchanged -->
+    <div id="controls">
+        <button id="instructionsButton">Instructions</button>
+        <button id="resetButton" aria-label="Reset Play">Reset Play</button>
+        <button id="toggleForm" style="display: none;">Create New Scenario</button>
+        <button id="toggleList" style="display: none;">View Scenarios</button>
+        <button id="authButton">Coach Login</button>
+        <button id="exportButton" style="display: none;">Export Scenarios</button>
+    </div>
+    <div id="authStatus"></div>
+    <div id="instructions">Tap or press Enter to start the 60-second challenge!</div>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="gameInfo">
+            <div id="score" role="status" aria-live="polite">Score: 0</div>
+            <div id="gameTimer">Time: 60</div>
+        </div>
+        <div id="scoreboard"></div>
+        <div id="finalScorePopup" class="popup">
+            <h2>Game Over!</h2>
+            <p id="finalScoreText"></p>
+            <button id="playAgainButton">Play Again</button>
+            <button id="closePopupButton">Close</button>
+        </div>
+        <div id="instructionsPopup" class="popup">
+            <h2>Welcome to Baseball Brain</h2>
+            <p>To begin a scenario, tap the field or press Enter. The fielder in red is the one you control and will have three options (yellow circles) for where to move. Select one, then tap again to see results (green = correct, red = incorrect) and proceed to the next scenario. Correct answers add 5 seconds to your time. Get as many points as possible in 60 seconds!</p>
+            <button id="closeInstructionsButton">Close</button>
+        </div>
+        <div>
+            <form id="scenarioForm">
+                <div class="form-group">
+                    <label for="hitTo">Hit To:</label>
+                    <select id="hitTo"></select>
+                </div>
+                <div class="form-group">
+                    <label for="userControls">User Controls:</label>
+                    <select id="userControls"></select>
+                </div>
+                <div class="form-group">
+                    <label for="correctPosition">Correct Position:</label>
+                    <select id="correctPosition"></select>
+                </div>
+                <div class="form-group">
+                    <label for="incorrectPosition">Incorrect Position:</label>
+                    <select id="incorrectPosition"></select>
+                </div>
+                <div class="form-group">
+                    <label for="outs">Outs (0-2):</label>
+                    <input type="number" id="outs" min="0" max="2" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Runners:</label>
+                    <input type="checkbox" id="runnerFirst" value="first"> First
+                    <input type="checkbox" id="runnerSecond" value="second"> Second
+                    <input type="checkbox" id="runnerThird" value="third"> Third
+                </div>
+                <div class="form-group">
+                    <label for="hitType">Hit Type:</label>
+                    <select id="hitType">
+                        <option value="ground">Ground</option>
+                        <option value="base">Base</option>
+                        <option value="fly">Fly</option>
+                    </select>
+                </div>
+                <button type="submit">Add Scenario</button>
+            </form>
+            <div id="scenarioList">
+                <h3>Saved Scenarios</h3>
+                <ul id="scenarioItems"></ul>
+            </div>
+        </div>
+    </div>
+
     <script>
+        const CONSTANTS = {
+            CANVAS_BASE_WIDTH: 900,
+            CANVAS_BASE_HEIGHT: 600,
+            FIELDER_RADIUS: 15,
+            BALL_RADIUS: 8,
+            RUNNER_RADIUS: 11.5,
+            COLORS: {
+                FIELDER: 'darkblue',
+                USER_CONTROL: 'red',
+                BALL: 'white',
+                RUNNER: '#FFA500',
+                LIGHT_GREEN: '#90EE90',
+                DARK_GREEN: '#228B22',
+                DIRT: '#D2B48C'
+            },
+            GAME_DURATION: 60000,
+            BONUS_TIME: 5000
+        };
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const CONSTANTS = { CANVAS_BASE_WIDTH: 900, CANVAS_BASE_HEIGHT: 600, COLORS: { USER_CONTROL: 'blue' } };
-        let scaleFactor = 1, currentScenario = null, showYellowCircles = false, showResults = false;
-        let playInProgress = false, gameStartTime = null, gameEndTime = null, ball = { x: 0, y: 0, moving: false };
-        let fielders = [], scenarioQueue = [], score = 0, hitTypeDisplay = '';
+        const scoreDisplay = document.getElementById('score');
+        const gameTimerDisplay = document.getElementById('gameTimer');
+        const resetButton = document.getElementById('resetButton');
         const scoreboard = document.getElementById('scoreboard');
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const gameTimerDisplay = document.getElementById('gameTimerDisplay');
+        const instructionsButton = document.getElementById('instructionsButton');
+        const finalScorePopup = document.getElementById('finalScorePopup');
+        const finalScoreText = document.getElementById('finalScoreText');
+        const playAgainButton = document.getElementById('playAgainButton');
+        const closePopupButton = document.getElementById('closePopupButton');
+        const instructionsPopup = document.getElementById('instructionsPopup');
+        const closeInstructionsButton = document.getElementById('closeInstructionsButton');
+        let score = 0, playInProgress = false, currentScenario = null, gameTimer = null;
+        let gameStartTime = null, showYellowCircles = false;
+        let waitingForSecondClick = false, animationFrameId = null;
+        let isAuthenticated = false, isPreviewMode = false;
+        let scaleFactor = 1;
+        let runnerAnimationFrameId = null;
+        let showResults = false;
+        let scenarioQueue = []; // Queue of scenario indices
+        let gameEndTime = null;
 
-        function drawField() { ctx.fillStyle = 'green'; ctx.fillRect(0, 0, 900, 600); }
-        function drawRunners() {}
-        function animateRunners() {}
-        function drawCircle(f) { ctx.beginPath(); ctx.arc(f.x, f.y, 10, 0, Math.PI * 2); ctx.fillStyle = f.color; ctx.fill(); ctx.closePath(); }
-        function drawBall() { ctx.beginPath(); ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); ctx.fillStyle = 'white'; ctx.fill(); ctx.closePath(); }
-        function resetFielders() { fielders = [{ x: 100, y: 100, color: 'gray' }]; }
-        function initializeScenarioQueue() { scenarioQueue = [0]; }
-        function getRandomPosition() { return { x: 450, y: 300 }; }
+        const shortstop = { x: 400, y: 175, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'SS' };
+        const firstBase = { x: 575, y: 250, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: '1B' };
+        const rightField = { x: 650, y: 100, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'RF' };
+        const centerField = { x: 450, y: 30, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'CF' };
+        const leftField = { x: 250, y: 100, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'LF' };
+        const thirdBase = { x: 325, y: 250, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: '3B' };
+        const secondBase = { x: 500, y: 175, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: '2B' };
+        const pitcher = { x: 450, y: 290, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'P' };
+        const catcher = { x: 450, y: 480, radius: CONSTANTS.FIELDER_RADIUS, color: CONSTANTS.COLORS.FIELDER, label: 'C' };
+        const ball = { x: 450, y: 300, baseRadius: CONSTANTS.BALL_RADIUS, radius: CONSTANTS.BALL_RADIUS, moving: false };
+
+        const fielders = [shortstop, firstBase, rightField, centerField, leftField, thirdBase, secondBase, pitcher, catcher];
+        fielders.forEach(f => { f.originalX = f.x; f.originalY = f.y; });
+
+        const positions = {
+            first: { x: 600, y: 300 }, second: { x: 450, y: 150 }, third: { x: 300, y: 300 },
+            home: { x: 450, y: 450 }, shortstopCover: { x: 375, y: 150 }, pitcherMound: { x: 450, y: 300 },
+            backupfirst: { x: 675, y: 275 }, backuphome: { x: 450, y: 550 }, lfcutoff: { x: 350, y: 150 },
+            rfcutoff: { x: 550, y: 150 }, backupthird: { x: 225, y: 325 }
+        };
+
+        const fieldersMap = { shortstop, firstBase, rightField, centerField, leftField, thirdBase, secondBase, pitcher, catcher };
+        let scenarios = [];
+
+        const baseOrder = {
+            'home': 'first',
+            'first': 'second',
+            'second': 'third',
+            'third': 'home'
+        };
+
+        function getRandomPosition(excludePositions) {
+            const positionKeys = Object.keys(positions);
+            const availablePositions = positionKeys.filter(key => 
+                !excludePositions.some(pos => pos.x === positions[key].x && pos.y === positions[key].y)
+            );
+            const randomKey = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+            return positions[randomKey];
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function initializeScenarioQueue() {
+            scenarioQueue = shuffleArray(Array.from({ length: scenarios.length }, (_, i) => i));
+        }
+
+        function resizeCanvas() {
+            const viewportWidth = window.innerWidth - 10;
+            scaleFactor = Math.min(viewportWidth / CONSTANTS.CANVAS_BASE_WIDTH, 1);
+            canvas.width = CONSTANTS.CANVAS_BASE_WIDTH * scaleFactor;
+            canvas.height = CONSTANTS.CANVAS_BASE_HEIGHT * scaleFactor;
+            ctx.setTransform(scaleFactor, 0, 0, scaleFactor, 0, 0);
+            drawDynamic();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', resizeCanvas);
+
+        function loadScenarios() {
+            return new Promise((resolve) => {
+                fetch('scenarios.json')
+                    .then(response => {
+                        if (!response.ok) throw new Error('scenarios.json not found');
+                        return response.json();
+                    })
+                    .then(data => {
+                        scenarios = data;
+                        localStorage.setItem('baseballScenarios', JSON.stringify(scenarios));
+                        console.log('Loaded from GitHub scenarios.json:', scenarios.length, 'scenarios');
+                        resolve();
+                    })
+                    .catch(error => {
+                        const storedScenarios = localStorage.getItem('baseballScenarios');
+                        if (storedScenarios) {
+                            scenarios = JSON.parse(storedScenarios);
+                            console.log('Loaded from localStorage:', scenarios.length, 'scenarios');
+                        } else {
+                            scenarios = [
+                                { hitTo: 'leftField', userControls: 'shortstop', correctPosition: 'lfcutoff', incorrectPosition: 'second', outs: 2, runners: ['second'], hitType: 'ground' }
+                            ];
+                            localStorage.setItem('baseballScenarios', JSON.stringify(scenarios));
+                            console.warn('Using default scenario:', error);
+                        }
+                        resolve();
+                    });
+            });
+        }
+
+        function saveScenarios() {
+            localStorage.setItem('baseballScenarios', JSON.stringify(scenarios));
+            console.log('Scenarios saved to localStorage:', scenarios.length);
+            if (isAuthenticated) updateScenarioList();
+        }
+
+        function populateDropdowns() {
+            const fielderKeys = Object.keys(fieldersMap);
+            ['hitTo', 'userControls'].forEach(id => {
+                const select = document.getElementById(id);
+                if (!select) return console.error(`Element #${id} not found`);
+                fielderKeys.forEach(key => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = fieldersMap[key].label;
+                    select.appendChild(option);
+                });
+            });
+
+            const positionKeys = Object.keys(positions);
+            ['correctPosition', 'incorrectPosition'].forEach(id => {
+                const select = document.getElementById(id);
+                if (!select) return console.error(`Element #${id} not found`);
+                positionKeys.forEach(key => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = key;
+                    select.appendChild(option);
+                });
+            });
+            console.log('Dropdowns populated');
+        }
+
+        function updateScenarioList() {
+            const list = document.getElementById('scenarioItems');
+            list.innerHTML = '';
+            scenarios.forEach((scenario, index) => {
+                const li = document.createElement('li');
+                li.textContent = `Hit: ${fieldersMap[scenario.hitTo].label}, Control: ${fieldersMap[scenario.userControls].label}, Outs: ${scenario.outs}, Runners: ${scenario.runners.join(', ') || 'None'}, Type: ${scenario.hitType}`;
+                
+                const viewBtn = document.createElement('button');
+                viewBtn.textContent = 'View';
+                viewBtn.className = 'view-btn';
+                viewBtn.onclick = () => previewScenario(index);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.onclick = () => deleteScenario(index);
+                
+                li.appendChild(viewBtn);
+                li.appendChild(deleteBtn);
+                list.appendChild(li);
+            });
+        }
+
+        function previewScenario(index) {
+            resetFielders();
+            fielders.forEach(f => { f.color = CONSTANTS.COLORS.FIELDER; });
+            const selected = scenarios[index];
+            currentScenario = {
+                hitTo: fieldersMap[selected.hitTo],
+                userControls: fieldersMap[selected.userControls],
+                correctPosition: positions[selected.correctPosition],
+                incorrectPosition: positions[selected.incorrectPosition],
+                randomPosition: getRandomPosition([positions[selected.correctPosition], positions[selected.incorrectPosition]]),
+                outs: selected.outs,
+                runners: [...selected.runners, 'home'],
+                hitType: selected.hitType,
+                runnerPositions: {}
+            };
+            currentScenario.userControls.color = CONSTANTS.COLORS.USER_CONTROL;
+            ball.x = currentScenario.hitTo.x;
+            ball.y = currentScenario.hitTo.y;
+            ball.moving = false;
+            showYellowCircles = true;
+            isPreviewMode = true;
+            playInProgress = false;
+            resetRunnerPositions();
+            drawDynamic();
+            document.getElementById('instructions').textContent = 'Preview Mode - Tap "Reset Play" to exit';
+            console.log('Previewing scenario:', currentScenario);
+        }
+
+        function deleteScenario(index) {
+            if (confirm('Are you sure you want to delete this scenario?')) {
+                scenarios.splice(index, 1);
+                saveScenarios();
+                console.log('Scenario deleted at index:', index);
+            }
+        }
+
+        const scenarioForm = document.getElementById('scenarioForm');
+        const toggleFormButton = document.getElementById('toggleForm');
+        const scenarioList = document.getElementById('scenarioList');
+        const toggleListButton = document.getElementById('toggleList');
+        const authButton = document.getElementById('authButton');
+        const exportButton = document.getElementById('exportButton');
+        const authStatus = document.getElementById('authStatus');
+
+        authButton.addEventListener('click', () => {
+            const password = prompt('Enter super secret password:');
+            if (password === 'coach') {
+                isAuthenticated = true;
+                toggleFormButton.style.display = 'inline-block';
+                toggleListButton.style.display = 'inline-block';
+                exportButton.style.display = 'inline-block';
+                authButton.style.display = 'none';
+                authStatus.textContent = 'Authenticated as Coach';
+                authStatus.style.color = '#008800';
+                console.log('Authentication successful');
+            } else {
+                alert('Incorrect password');
+                console.log('Authentication failed');
+            }
+        });
+
+        toggleFormButton.addEventListener('click', () => {
+            if (!isAuthenticated) return;
+            scenarioForm.classList.toggle('active');
+            scenarioList.classList.remove('active');
+            toggleFormButton.textContent = scenarioForm.classList.contains('active') ? 'Hide Scenario Creator' : 'Create New Scenario';
+        });
+
+        toggleListButton.addEventListener('click', () => {
+            if (!isAuthenticated) return;
+            scenarioList.classList.toggle('active');
+            scenarioForm.classList.remove('active');
+            toggleListButton.textContent = scenarioList.classList.contains('active') ? 'Hide Scenarios' : 'View Scenarios';
+            if (scenarioList.classList.contains('active')) updateScenarioList();
+        });
+
+        exportButton.addEventListener('click', () => {
+            if (!isAuthenticated) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(scenarios, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute('href', dataStr);
+            downloadAnchor.setAttribute('download', 'scenarios.json');
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            document.body.removeChild(downloadAnchor);
+            alert('Scenarios exported as scenarios.json. Upload this to your GitHub repo to sync across devices!');
+        });
+
+        scenarioForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!isAuthenticated) return;
+            const newScenario = {
+                hitTo: document.getElementById('hitTo').value,
+                userControls: document.getElementById('userControls').value,
+                correctPosition: document.getElementById('correctPosition').value,
+                incorrectPosition: document.getElementById('incorrectPosition').value,
+                outs: parseInt(document.getElementById('outs').value),
+                runners: [
+                    ...(document.getElementById('runnerFirst').checked ? ['first'] : []),
+                    ...(document.getElementById('runnerSecond').checked ? ['second'] : []),
+                    ...(document.getElementById('runnerThird').checked ? ['third'] : [])
+                ],
+                hitType: document.getElementById('hitType').value
+            };
+            if (validateScenario(newScenario)) {
+                scenarios.push(newScenario);
+                saveScenarios();
+                alert('Scenario added and saved locally! Export to update GitHub.');
+                scenarioForm.reset();
+                console.log('New scenario added:', newScenario);
+            } else {
+                alert('Invalid scenario configuration');
+            }
+        });
+
+        function validateScenario(scenario) {
+            const required = ['hitTo', 'userControls', 'correctPosition', 'incorrectPosition', 'outs', 'runners', 'hitType'];
+            return required.every(key => key in scenario) && 
+                   ['ground', 'base', 'fly'].includes(scenario.hitType) &&
+                   scenario.outs >= 0 && scenario.outs <= 2;
+        }
+
+        function drawField() {
+            const stripeHeight = 50 / scaleFactor;
+            for (let y = 0; y < CONSTANTS.CANVAS_BASE_HEIGHT; y += stripeHeight) {
+                ctx.fillStyle = (Math.floor(y / stripeHeight) % 2 === 0) ? CONSTANTS.COLORS.LIGHT_GREEN : CONSTANTS.COLORS.DARK_GREEN;
+                ctx.fillRect(0, y, CONSTANTS.CANVAS_BASE_WIDTH, stripeHeight);
+            }
+            ctx.fillStyle = CONSTANTS.COLORS.DIRT;
+            ctx.beginPath();
+            ctx.moveTo(450, 450); ctx.lineTo(600, 300); ctx.lineTo(450, 150); ctx.lineTo(300, 300); ctx.closePath();
+            ctx.fill(); ctx.strokeStyle = 'white'; ctx.stroke();
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 2 / scaleFactor;
+            ctx.beginPath(); ctx.moveTo(450, 450); ctx.lineTo(900, 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(450, 450); ctx.lineTo(0, 0); ctx.stroke();
+            ctx.fillStyle = 'white'; const baseSize = 20 / scaleFactor;
+            ctx.fillRect(600 - baseSize / 2, 300 - baseSize / 2, baseSize, baseSize);
+            ctx.fillRect(450 - baseSize / 2, 150 - baseSize / 2, baseSize, baseSize);
+            ctx.fillRect(300 - baseSize / 2, 300 - baseSize / 2, baseSize, baseSize);
+            ctx.fillRect(450 - baseSize / 2, 450 - baseSize / 2, baseSize, baseSize);
+            ctx.fillStyle = 'black'; ctx.font = `${12 / scaleFactor}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('H', 450, 450); ctx.fillText('1B', 600, 300); ctx.fillText('2B', 450, 150); ctx.fillText('3B', 300, 300);
+        }
+
+        function drawCircle(obj) {
+            if (obj === currentScenario?.userControls && (obj.x !== obj.originalX || obj.y !== obj.originalY)) {
+                ctx.beginPath(); ctx.arc(obj.originalX, obj.originalY, obj.radius / scaleFactor, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'; ctx.lineWidth = 2 / scaleFactor; ctx.stroke(); ctx.closePath();
+            }
+            ctx.beginPath(); ctx.arc(obj.x, obj.y, obj.radius / scaleFactor, 0, Math.PI * 2);
+            ctx.fillStyle = obj.color; ctx.fill(); ctx.strokeStyle = 'gold'; ctx.lineWidth = 2 / scaleFactor; ctx.stroke(); ctx.closePath();
+            ctx.fillStyle = 'white'; ctx.font = `${12 / scaleFactor}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(obj.label, obj.x, obj.y);
+        }
+
+        function drawBall() {
+            ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius / scaleFactor, 0, Math.PI * 2);
+            ctx.fillStyle = CONSTANTS.COLORS.BALL; ctx.fill(); ctx.strokeStyle = 'black'; ctx.lineWidth = 1 / scaleFactor; ctx.stroke(); ctx.closePath();
+            ctx.strokeStyle = 'red'; ctx.lineWidth = 2 / scaleFactor;
+            ctx.beginPath(); ctx.moveTo(ball.x - ball.radius / scaleFactor, ball.y - ball.radius / (2 * scaleFactor));
+            ctx.quadraticCurveTo(ball.x, ball.y, ball.x + ball.radius / scaleFactor, ball.y + ball.radius / (2 * scaleFactor)); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(ball.x - ball.radius / scaleFactor, ball.y + ball.radius / (2 * scaleFactor));
+            ctx.quadraticCurveTo(ball.x, ball.y, ball.x + ball.radius / scaleFactor, ball.y - ball.radius / (2 * scaleFactor)); ctx.stroke();
+        }
+
+        function resetRunnerPositions() {
+            if (currentScenario?.runners) {
+                currentScenario.runnerPositions = {};
+                currentScenario.runners.forEach(base => {
+                    const basePos = positions[base];
+                    currentScenario.runnerPositions[base] = { x: basePos.x, y: basePos.y };
+                });
+            }
+        }
+
+        function animateRunners() {
+            if (!currentScenario?.runners || !ball.moving) return;
+            if (runnerAnimationFrameId) cancelAnimationFrame(runnerAnimationFrameId);
+
+            const duration = 1000;
+            const startTime = performance.now();
+
+            function animate(timestamp) {
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                currentScenario.runners.forEach(base => {
+                    const startPos = positions[base];
+                    const nextBase = baseOrder[base];
+                    const endPos = positions[nextBase];
+                    const offsetX = (endPos.x - startPos.x) * 0.25;
+                    const offsetY = (endPos.y - startPos.y) * 0.25;
+
+                    currentScenario.runnerPositions[base].x = startPos.x + (offsetX * progress);
+                    currentScenario.runnerPositions[base].y = startPos.y + (offsetY * progress);
+                });
+
+                drawDynamic(timestamp);
+
+                if (progress < 1) {
+                    runnerAnimationFrameId = requestAnimationFrame(animate);
+                } else {
+                    runnerAnimationFrameId = null;
+                }
+            }
+
+            runnerAnimationFrameId = requestAnimationFrame(animate);
+        }
+
+        function drawRunners() {
+            if (currentScenario?.runners) {
+                currentScenario.runners.forEach(base => {
+                    if (!currentScenario.runnerPositions[base]) return console.warn(`Invalid runner position for base: ${base}`);
+                    const { x, y } = currentScenario.runnerPositions[base];
+                    ctx.beginPath();
+                    ctx.arc(x, y, CONSTANTS.RUNNER_RADIUS / scaleFactor, 0, Math.PI * 2);
+                    ctx.fillStyle = CONSTANTS.COLORS.RUNNER;
+                    ctx.fill();
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 1 / scaleFactor;
+                    ctx.stroke();
+                    ctx.closePath();
+                });
+            }
+        }
+
+        function drawStatic() {
+            ctx.clearRect(0, 0, CONSTANTS.CANVAS_BASE_WIDTH, CONSTANTS.CANVAS_BASE_HEIGHT);
+            drawField();
+        }
 
         function drawDynamic(timestamp = performance.now()) {
-            ctx.clearRect(0, 0, 900, 600);
+            ctx.clearRect(0, 0, CONSTANTS.CANVAS_BASE_WIDTH, CONSTANTS.CANVAS_BASE_HEIGHT);
             drawField();
             if (currentScenario) {
-                // Your drawDynamic logic here
-                ctx.fillStyle = 'black';
-                ctx.font = '24px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Game Running', 450, 75);
+                if (showYellowCircles || showResults) {
+                    const positionsToDraw = [currentScenario.correctPosition, currentScenario.incorrectPosition, currentScenario.randomPosition];
+                    positionsToDraw.forEach(pos => {
+                        ctx.beginPath();
+                        ctx.arc(pos.x, pos.y, 30 / scaleFactor, 0, Math.PI * 2);
+                        if (showResults) {
+                            ctx.strokeStyle = (pos === currentScenario.correctPosition) ? 'green' : 'red';
+                        } else {
+                            ctx.strokeStyle = 'yellow';
+                        }
+                        ctx.lineWidth = 3 / scaleFactor;
+                        ctx.stroke();
+                        ctx.closePath();
+                    });
+                }
+                drawRunners();
+                if (ball.moving) animateRunners();
+                if (playInProgress && !ball.moving && !showYellowCircles && !showResults) {
+                    ctx.fillStyle = 'black'; ctx.font = `${24 / scaleFactor}px Arial`; ctx.textAlign = 'center';
+                    ctx.fillText('Tap to Pitch', 450, 75);
+                }
+                if (showResults) {
+                    ctx.fillStyle = 'black'; ctx.font = `${24 / scaleFactor}px Arial`; ctx.textAlign = 'center';
+                    ctx.fillText('Tap to Continue', 450, 75);
+                }
             }
             fielders.forEach(drawCircle);
             drawBall();
-            requestAnimationFrame(drawDynamic); // Keep rendering
+            if (currentScenario && gameStartTime) {
+                const elapsed = timestamp - gameStartTime;
+                const remainingTime = Math.max(0, Math.ceil((gameEndTime - timestamp) / 1000));
+                gameTimerDisplay.textContent = `Time: ${remainingTime}`;
+                if (remainingTime < 10) {
+                    gameTimerDisplay.classList.add('low-time');
+                } else {
+                    gameTimerDisplay.classList.remove('low-time');
+                }
+            }
         }
 
-        function resetPlay() {
+        function resetFielders() {
+            fielders.forEach(f => { 
+                f.x = f.originalX; 
+                f.y = f.originalY; 
+                f.color = CONSTANTS.COLORS.FIELDER; 
+            });
+            ball.x = 450; 
+            ball.y = 300; 
+            ball.radius = CONSTANTS.BALL_RADIUS / scaleFactor; 
+            ball.moving = false;
+            if (currentScenario) resetRunnerPositions();
+        }
+
+        function startGame() {
+            if (playInProgress || !scenarios.length || isPreviewMode) {
+                console.log('Cannot start game: ', { playInProgress, scenarioCount: scenarios.length, isPreviewMode });
+                return;
+            }
+            playInProgress = true;
+            gameStartTime = performance.now();
+            gameEndTime = gameStartTime + CONSTANTS.GAME_DURATION;
+            score = 0;
+            scenarioQueue = [];
+            initializeScenarioQueue(); // Initialize with shuffled scenarios
+            scoreDisplay.textContent = `Score: ${score}`;
+            gameTimer = setTimeout(endGame, CONSTANTS.GAME_DURATION);
+            startPlay();
+            requestAnimationFrame(drawDynamic);
+            console.log('Game started');
+        }
+
+        function endGame() {
+            clearTimeout(gameTimer);
+            playInProgress = false;
             gameStartTime = null;
             gameEndTime = null;
             resetFielders();
             currentScenario = null;
-            playInProgress = false;
-            score = 0;
-            scoreDisplay.textContent = `Score: ${score}`;
-            gameTimerDisplay.textContent = 'Time: 60';
-            scoreboard.textContent = 'Outs: 0 | Runners: None';
-            document.getElementById('instructions').textContent = 'Tap or press Enter to start!';
+            showYellowCircles = false;
+            waitingForSecondClick = false;
+            showResults = false;
+            scenarioQueue = [];
+            if (runnerAnimationFrameId) cancelAnimationFrame(runnerAnimationFrameId);
             drawDynamic();
+            setTimeout(() => {
+                finalScoreText.textContent = `Final Score: ${score}`;
+                finalScorePopup.style.display = 'block';
+            }, 100);
+            console.log('Game ended');
         }
+
+        playAgainButton.addEventListener('click', () => {
+            finalScorePopup.style.display = 'none';
+            startGame();
+        });
+
+        closePopupButton.addEventListener('click', () => {
+            finalScorePopup.style.display = 'none';
+            resetPlay();
+        });
+
+        instructionsButton.addEventListener('click', () => {
+            instructionsPopup.style.display = 'block';
+        });
+
+        closeInstructionsButton.addEventListener('click', () => {
+            instructionsPopup.style.display = 'none';
+        });
 
         function startPlay() {
             if (!playInProgress || !gameStartTime) return;
             resetFielders();
-            currentScenario = { hitTo: { x: 450, y: 300 }, correctPosition: { x: 450, y: 300 }, incorrectPosition: { x: 200, y: 300 }, randomPosition: { x: 600, y: 300 }, outs: 0, runners: [], hitType: 'fly' };
+            if (scenarioQueue.length === 0) {
+                initializeScenarioQueue(); // Reshuffle when queue is empty
+                console.log('Scenario queue refilled and shuffled');
+            }
+            const nextIndex = scenarioQueue.shift(); // Take first from queue
+            const selected = scenarios[nextIndex];
+            currentScenario = {
+                hitTo: fieldersMap[selected.hitTo],
+                userControls: fieldersMap[selected.userControls],
+                correctPosition: positions[selected.correctPosition],
+                incorrectPosition: positions[selected.incorrectPosition],
+                randomPosition: getRandomPosition([positions[selected.correctPosition], positions[selected.incorrectPosition]]),
+                outs: selected.outs,
+                runners: [...selected.runners, 'home'],
+                hitType: selected.hitType,
+                runnerPositions: {}
+            };
+            currentScenario.userControls.color = CONSTANTS.COLORS.USER_CONTROL;
+            resetRunnerPositions();
+            showYellowCircles = false;
+            waitingForSecondClick = true;
+            showResults = false;
+            drawDynamic();
+            console.log('Play started with scenario index:', nextIndex, 'Remaining in queue:', scenarioQueue.length);
+        }
+
+        function animateBall(startX, startY, endX, endY, callback, isHitPhase = false) {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            const deltaX = endX - startX, deltaY = endY - startY, duration = 1000;
+            const startTime = performance.now(), originalRadius = ball.baseRadius;
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime, progress = Math.min(elapsed / duration, 1);
+                ball.x = startX + progress * deltaX; ball.y = startY + progress * deltaY;
+                if (isHitPhase && currentScenario.hitType === 'fly') ball.radius = (originalRadius / scaleFactor) * (1 + Math.sin(progress * Math.PI) * 0.5);
+                else ball.radius = originalRadius / scaleFactor;
+                drawDynamic(currentTime);
+                if (progress < 1) animationFrameId = requestAnimationFrame(animate);
+                else {
+                    ball.x = endX; ball.y = endY; ball.radius = originalRadius / scaleFactor; animationFrameId = null; callback();
+                }
+            }
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        function startBallAnimation() {
+            if (!playInProgress || !waitingForSecondClick) return;
+            waitingForSecondClick = false;
+            ball.moving = true;
+            animateBall(450, 300, 450, 450, () => {
+                animateBall(450, 450, currentScenario.hitTo.x, currentScenario.hitTo.y, () => {
+                    ball.moving = false;
+                    showYellowCircles = true;
+                    drawDynamic();
+                }, true);
+            }, false);
+        }
+
+        function extendGameTime() {
+            gameEndTime += CONSTANTS.BONUS_TIME;
+            clearTimeout(gameTimer);
+            gameTimer = setTimeout(endGame, gameEndTime - performance.now());
+            console.log('Game time extended by 5 seconds. New end time:', new Date(gameEndTime));
+        }
+
+        function debounce(fn, delay) {
+            let timeout;
+            return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => fn(...args), delay); };
+        }
+
+        const handleInput = debounce((event) => {
+            if (isPreviewMode) return;
+            if (!playInProgress && !gameStartTime) {
+                startGame();
+            } else if (waitingForSecondClick) {
+                startBallAnimation();
+            } else if (currentScenario && showYellowCircles && !showResults) {
+                const rect = canvas.getBoundingClientRect();
+                const touchX = (event.touches ? event.touches[0].clientX : event.clientX) - rect.left;
+                const touchY = (event.touches ? event.touches[0].clientY : event.clientY) - rect.top;
+                const mouseX = touchX / scaleFactor, mouseY = touchY / scaleFactor;
+                const choices = [currentScenario.correctPosition, currentScenario.incorrectPosition, currentScenario.randomPosition];
+                let selectedPosition = null;
+                choices.forEach(pos => {
+                    if (Math.hypot(pos.x - mouseX, pos.y - mouseY) < 30 / scaleFactor) selectedPosition = pos;
+                });
+                if (selectedPosition) {
+                    currentScenario.userControls.x = selectedPosition.x; 
+                    currentScenario.userControls.y = selectedPosition.y;
+                    showYellowCircles = false;
+                    showResults = true;
+                    if (selectedPosition === currentScenario.correctPosition) {
+                        score += 1;
+                        extendGameTime();
+                    }
+                    scoreDisplay.textContent = `Score: ${score}`;
+                    drawDynamic();
+                }
+            } else if (showResults) {
+                startPlay();
+            }
+        }, 200);
+
+        function resetPlay() {
+            if (gameTimer) clearTimeout(gameTimer);
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (runnerAnimationFrameId) cancelAnimationFrame(runnerAnimationFrameId);
+            gameStartTime = null;
+            gameEndTime = null;
+            resetFielders();
+            currentScenario = null;
+            showYellowCircles = false;
+            waitingForSecondClick = false;
+            playInProgress = false;
+            isPreviewMode = false;
+            showResults = false;
+            scenarioQueue = [];
+            score = 0;
+            scoreDisplay.textContent = `Score: ${score}`;
+            gameTimerDisplay.textContent = `Time: 60`;
+            gameTimerDisplay.classList.remove('low-time');
+            scoreboard.innerHTML = '';
+            document.getElementById('instructions').textContent = 'Tap or press Enter to start the 60-second challenge!';
+            drawStatic();
             drawDynamic();
         }
 
-        function init() {
-            playInProgress = true;
-            gameStartTime = performance.now();
-            gameEndTime = gameStartTime + 60000;
-            resetPlay();
-            requestAnimationFrame(drawDynamic);
+        canvas.addEventListener('click', handleInput);
+        canvas.addEventListener('touchstart', (e) => { 
+            e.preventDefault(); 
+            handleInput(e); 
+        }, { passive: false });
+        document.addEventListener('keydown', (e) => { 
+            if (e.key === 'Enter' && !isPreviewMode) handleInput({ clientX: 0, clientY: 0 }); 
+        });
+        resetButton.addEventListener('click', resetPlay);
+
+        async function init() {
+            console.log('Initializing...');
+            if (!ctx) {
+                console.error('Canvas context not available');
+                return;
+            }
+            resizeCanvas();
+            drawStatic();
+            drawDynamic();
+            await loadScenarios();
+            populateDropdowns();
+            updateScenarioList();
+            console.log('Initialization complete');
         }
 
-        window.onload = init;
+        window.addEventListener('load', () => {
+            init().catch(error => console.error('Init failed:', error));
+        });
     </script>
 </body>
 </html>
