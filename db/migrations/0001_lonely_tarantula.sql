@@ -1,0 +1,1 @@
+ALTER TABLE "challenge_runs" ADD COLUMN "last_answer" jsonb;
