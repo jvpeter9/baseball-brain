@@ -5,7 +5,7 @@ let plays=[],deck=[],q=null,mode='practice',active=false,answered=false,ready=fa
 let prePitch=false,moving=false,misses=[],answerPending=false,finishRequested=false;
 const letters=['A','B','C'];
 const runnerOffsets={first:[-17,-17],second:[-17,17],third:[17,17]};
-let starting=false;
+let starting=false,clockPaused=true,pausedMs=90000,transitioning=false;
 const line=(a,b,color,dash='')=>`<path d="M${a} L${b}" fill="none" stroke="${color}" stroke-width="2.5" ${dash?`stroke-dasharray="${dash}"`:''} marker-end="url(#arrow)"/>`;
 function draw(progress=1,showAnswer=false,movement=1){
  const field=$('field');
@@ -37,16 +37,17 @@ async function api(action,data={}){
  let result;try{result=await response.json();}catch{throw new Error('The shared leaderboard is unavailable. Practice still works.');}
  if(!response.ok)throw new Error(result.error||'Connection interrupted. Please try again.');return result;
 }
-function stats(){ $('score').textContent=mode==='practice'?`${correct} / ${total}`:correct*10;$('clock').textContent=mode==='practice'?streak:Math.max(0,Math.ceil((deadline-Date.now())/1000))+'s'; }
+const points=()=>correct*10-(total-correct)*5;
+function stats(){ $('score').textContent=mode==='practice'?`${correct} / ${total}`:points();$('clock').textContent=mode==='practice'?streak:Math.max(0,Math.ceil((clockPaused?pausedMs:deadline-Date.now())/1000))+'s';if(mode==='challenge')$('clockLabel').textContent=clockPaused?'TIME · PAUSED':'TIME LEFT'; }
 function controls(){
- const canAdvance=!answerPending&&!starting&&!prePitch&&!moving&&(!active||answered);
+ const canAdvance=!answerPending&&!transitioning&&!starting&&!prePitch&&!moving&&(!active||answered);
  $('fieldHint').disabled=!canAdvance;
  $('fieldHint').textContent=!active?'Tap the field to start':prePitch?'Get set…':moving?'Watch everyone move into position':answered?'Tap anywhere on the field for the next play':ready?'Tap A, B or C · or use the answer buttons':'Watch the hit…';
  $('field').classList.toggle('tapReady',canAdvance);
  $('field').setAttribute('tabindex',canAdvance?'0':'-1');
- for(const id of ['start','practice','challenge'])$(id).disabled=answerPending;
+ for(const id of ['start','practice','challenge'])$(id).disabled=answerPending||transitioning;
  document.querySelectorAll('.answer').forEach(b=>b.disabled=!ready||answered||!active);
- $('next').hidden=!answered||!active;$('next').disabled=moving;
+ $('next').hidden=!answered||!active;$('next').disabled=moving||transitioning;
  $('replay').hidden=!q||!active||prePitch||moving||(!answered&&mode==='challenge');
  $('replay').textContent=answered?'Replay rotation':'Replay hit';
  $('endPractice').hidden=!active||mode!=='practice';
@@ -60,7 +61,7 @@ function showPlay(){
 }
 function renderQuestion(){
  answered=false;ready=false;moving=false;prePitch=true;cancelAnimationFrame(frame);
- $('feedback').textContent='';$('choices').innerHTML='';
+ $('feedback').textContent='';$('clockRetry').hidden=true;$('choices').innerHTML='';
  $('question').innerHTML=`<p class="eyebrow">GET SET</p><h2>${roleNames[q.role]}</h2><p>${runnerDescription(q.play)}</p>`;
  $('count').textContent=`REP ${total+1} · ${mode==='practice'?'PRACTICE':'CHALLENGE'}`;
  $('phase').textContent='GET SET';$('prepRunners').textContent=runnerDescription(q.play);$('prepRole').textContent=`You are playing ${roleNames[q.role].toLowerCase()}.`;
@@ -80,12 +81,19 @@ function animateRotation(){
  };frame=requestAnimationFrame(tick);
 }
 function animateHit(){cancelAnimationFrame(frame);const version=++animationVersion;ready=false;controls();$('phase').textContent='WATCH THE HIT';const start=performance.now();const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- const tick=now=>{if(version!==animationVersion||!active)return;const p=reduced?1:Math.min(1,(now-start)/1100);draw(p,answered);if(p<1)frame=requestAnimationFrame(tick);else{ready=true;$('phase').textContent=answered?'LEARN THE ASSIGNMENT':'CHOOSE YOUR SPOT';controls();draw(1,answered);}};frame=requestAnimationFrame(tick);
+ const tick=now=>{if(version!==animationVersion||!active)return;const p=reduced?1:Math.min(1,(now-start)/1100);draw(p,answered);if(p<1)frame=requestAnimationFrame(tick);else{if(mode==='challenge')resumeAfterHit();else{ready=true;$('phase').textContent='CHOOSE YOUR SPOT';controls();draw(1,answered);}}};frame=requestAnimationFrame(tick);
+}
+function pauseDisplay(){pausedMs=Math.max(0,deadline-Date.now());clockPaused=true;stats();}
+async function resumeAfterHit(){
+ transitioning=true;controls();$('phase').textContent='GETTING READY';
+ try{const r=await api('resume',{session,index:questionIndex});if(!active)return;if(r.expired){finish();return;}deadline=Date.now()+r.remainingMs;clockPaused=false;ready=true;$('clockRetry').hidden=true;$('phase').textContent='CHOOSE YOUR SPOT';draw(1);stats();}
+ catch(e){$('feedback').textContent='Could not sync the clock. Tap Retry to continue.';$('clockRetry').hidden=false;$('clockRetry').onclick=resumeAfterHit;}
+ finally{transitioning=false;controls();}
 }
 function reveal(id,explanation){
  const isCorrect=id===q.correct;answered=true;total++;if(!isCorrect)misses.push(missedPlay(q,id,total));if(isCorrect){correct++;streak++;}else streak=0;
  document.querySelectorAll('.answer').forEach((b,i)=>{b.classList.toggle('correct',q.choices[i]===q.correct);b.classList.toggle('incorrect',q.choices[i]===id&&!isCorrect);});
- $('feedback').innerHTML=`<strong>${isCorrect?'Right spot. Nice read!':'Here’s your assignment.'}</strong><br>${esc(explanation)}<br><strong>Why:</strong> ${esc(assignmentReason(q.play,q.role))}<small>Spiders guide · page ${q.play.page}${q.play.page>=14?' · Pitcher protects home, even when the relay goes to third.':''}</small>`;
+ $('feedback').innerHTML=`<strong>${isCorrect?(mode==='challenge'?'+10 points. Nice read!':'Right spot. Nice read!'):(mode==='challenge'?'−5 points. Here’s your assignment.':'Here’s your assignment.')}</strong><br>${esc(explanation)}<br><strong>Why:</strong> ${esc(assignmentReason(q.play,q.role))}<small>Spiders guide · page ${q.play.page}${q.play.page>=14?' · Pitcher protects home, even when the relay goes to third.':''}</small>`;
  stats();animateRotation();
 }
 async function answer(index){
@@ -94,25 +102,34 @@ async function answer(index){
  const requestedQ=q;answerPending=true;ready=false;controls();try{const r=await api('answer',{session,index:questionIndex,choice:id});if(q!==requestedQ||!active)return;if(r.expired){finish();return;}q.correct=r.correct;q.play=plays.find(p=>p.id===q.play.id);remoteNext=r.next;questionIndex=r.index;reveal(id,r.explanation);}catch(e){if(q!==requestedQ||!active)return;$('feedback').textContent=e.message;ready=true;controls();}finally{answerPending=false;controls();if(finishRequested&&active){finishRequested=false;finish();}}
 }
 async function start(){
- if(!plays.length||starting||answerPending)return;starting=true;$('start').disabled=true;clearInterval(timer);cancelAnimationFrame(frame);active=false;hidePrep();moving=false;misses=[];finishRequested=false;session=null;correct=total=streak=questionIndex=0;$('saveStatus').textContent='';$('saveScore').hidden=false;
- try{if(mode==='challenge'){const r=await api('start');session=r.session;deadline=Date.now()+r.remainingMs;q=r.question;timer=setInterval(()=>{stats();if(Date.now()>=deadline)finish();},200);}else{deck=makeDeck(plays);q=deck.shift();}active=true;stats();renderQuestion();$('start').textContent='Restart '+mode;}catch(e){$('feedback').textContent=e.message;}finally{starting=false;$('start').disabled=false;controls();}
+ if(!plays.length||starting||answerPending||transitioning)return;starting=true;$('start').disabled=true;clearInterval(timer);cancelAnimationFrame(frame);active=false;hidePrep();moving=false;misses=[];finishRequested=false;session=null;clockPaused=true;pausedMs=90000;correct=total=streak=questionIndex=0;$('saveStatus').textContent='';$('saveScore').hidden=false;
+ try{if(mode==='challenge'){const r=await api('start',{rulesVersion:2});session=r.session;pausedMs=r.remainingMs;clockPaused=true;deadline=Date.now()+r.remainingMs;q=r.question;timer=setInterval(()=>{stats();if(!clockPaused&&Date.now()>=deadline)finish();},200);}else{deck=makeDeck(plays);q=deck.shift();}active=true;stats();renderQuestion();$('start').textContent='Restart '+mode;}catch(e){$('feedback').textContent=e.message;}finally{starting=false;$('start').disabled=false;controls();}
 }
 function finish(){
  if(!active)return;if(answerPending){finishRequested=true;ready=false;controls();return;}
  active=false;ready=false;moving=false;hidePrep();clearInterval(timer);cancelAnimationFrame(frame);animationVersion++;controls();stats();
  if(answered)draw(1,true);
  $('phase').textContent=mode==='practice'?'PRACTICE COMPLETE':'CHALLENGE COMPLETE';$('resultHeading').textContent=$('phase').textContent;
- $('resultText').textContent=mode==='practice'?`${correct} correct out of ${total} answers.`:`${correct*10} points · ${correct} correct out of ${total} answers.`;
+ $('resultText').textContent=mode==='practice'?`${correct} correct out of ${total} answers.`:`${points()} points · ${correct} correct out of ${total} answers.`;
  $('saveScore').hidden=mode!=='challenge';$('saveStatus').textContent='';
  $('missedReview').innerHTML=misses.length?`<h3>${misses.length} ${misses.length===1?'play':'plays'} to work on</h3>`+misses.map(m=>`<article class="missedPlay"><p class="eyebrow">REP ${m.rep} · ${m.role}</p><h3>${esc(m.scenario)}</h3><p>${esc(m.runners)} · Throw to ${esc(m.target)}</p><p class="yourChoice"><strong>You chose:</strong> ${esc(m.selected)}</p><p class="rightChoice"><strong>Correct spot:</strong> ${esc(m.correct)}</p><p>${esc(m.explanation)}</p><p><strong>Why:</strong> ${esc(m.why)}</p><small>Spiders guide · page ${m.page}</small></article>`).join(''):`<p>${total?'No missed plays. Nice reads!':'No answers yet. Take a few reps to build your review.'}</p>`;
  $('results').showModal();
 }
-function setMode(value){hidePrep();moving=false;misses=[];finishRequested=false;mode=value;active=false;ready=false;q=null;clearInterval(timer);cancelAnimationFrame(frame);animationVersion++;$('practice').setAttribute('aria-pressed',value==='practice');$('challenge').setAttribute('aria-pressed',value==='challenge');$('modeNote').textContent=value==='practice'?'Take your time. Learn the why behind every move.':'90 seconds. 10 points per correct answer. Climb the shared board.';$('start').textContent='Start '+value;$('scoreLabel').textContent=value==='practice'?'CORRECT':'POINTS';$('clockLabel').textContent=value==='practice'?'STREAK':'TIME LEFT';correct=total=streak=0;deadline=Date.now()+90000;stats();$('choices').innerHTML='';$('feedback').textContent='';$('question').innerHTML='<p class="eyebrow">READY FOR YOUR NEXT REP</p><h2>Let’s make the play.</h2><p>Press Start '+value+' to take the field.</p>';$('phase').textContent='READY WHEN YOU ARE';controls();draw();}
+function setMode(value){hidePrep();moving=false;misses=[];finishRequested=false;mode=value;active=false;ready=false;q=null;clearInterval(timer);cancelAnimationFrame(frame);animationVersion++;$('practice').setAttribute('aria-pressed',value==='practice');$('challenge').setAttribute('aria-pressed',value==='challenge');$('modeNote').textContent=value==='practice'?'Take your time. Learn the why behind every move.':'90 seconds. +10 correct / −5 incorrect. Clock pauses for setup and the hit.';$('start').textContent='Start '+value;$('scoreLabel').textContent=value==='practice'?'CORRECT':'POINTS';$('clockLabel').textContent=value==='practice'?'STREAK':'TIME LEFT';correct=total=streak=0;deadline=Date.now()+90000;stats();$('choices').innerHTML='';$('feedback').textContent='';$('question').innerHTML='<p class="eyebrow">READY FOR YOUR NEXT REP</p><h2>Let’s make the play.</h2><p>Press Start '+value+' to take the field.</p>';$('phase').textContent='READY WHEN YOU ARE';controls();draw();}
+$('helpOpen').onclick=()=>$('help').showModal();$('helpClose').onclick=()=>$('help').close();
 $('practice').onclick=()=>setMode('practice');$('challenge').onclick=()=>setMode('challenge');$('start').onclick=start;
 $('endPractice').onclick=finish;
-function nextPlay(){if(!active||!answered||moving)return;if(mode==='challenge'){if(!remoteNext){finish();return;}q=remoteNext;}else{if(!deck.length){finish();return;}q=deck.shift();}renderQuestion();}
+async function nextPlay(){
+ if(!active||!answered||moving||transitioning)return;
+ if(mode==='challenge'){
+  if(!remoteNext){finish();return;}if(!clockPaused)pauseDisplay();transitioning=true;controls();
+  try{const r=await api('begin',{session,index:questionIndex});if(!active)return;if(r.expired){finish();return;}pausedMs=r.remainingMs;q=r.question;$('clockRetry').hidden=true;renderQuestion();stats();}
+  catch(e){$('feedback').textContent='Could not start the next play. Tap Retry to continue.';$('clockRetry').hidden=false;$('clockRetry').onclick=nextPlay;}
+  finally{transitioning=false;controls();}
+ }else{if(!deck.length){finish();return;}q=deck.shift();renderQuestion();}
+}
 $('next').onclick=nextPlay;
-function advanceFromField(){if(prePitch||moving||answerPending||starting||document.querySelector('dialog[open]'))return;if(!active)start();else if(answered)nextPlay();}
+function advanceFromField(){if(prePitch||moving||answerPending||transitioning||starting||document.querySelector('dialog[open]'))return;if(!active)start();else if(answered)nextPlay();}
 $('fieldHint').onclick=advanceFromField;
 $('field').onclick=e=>{
  if(active&&ready&&!answered&&!prePitch&&!moving){

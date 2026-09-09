@@ -3,7 +3,7 @@
 Cutoff and relay training, refreshed from the Spiders Cutoff & Backup Guide.
 
 - Practice is untimed and explains every assignment, with the source page.
-- Challenge runs for 90 seconds, with 10 points per correct answer and a shared Neon leaderboard.
+- Challenge runs for 90 seconds, with +10 points per correct answer, -5 per incorrect answer and a shared Neon leaderboard.
 - Only 1B, 2B, SS, 3B and P are selected. Five-role shuffled rounds balance position practice.
 - The 15 booklet diagrams expand into 27 situations / 135 position questions. First-base-open extra-base hits use empty bases, 2B, 3B, or 2B+3B. Runner-on-first extra-base plays explicitly choose a throw home or to third. No infield-hit scenarios are included.
 - Each question has exactly three choices: the correct assignment and two randomly sampled destinations that are correct elsewhere in the booklet. Choices cannot overlap or use identical labels.
@@ -11,7 +11,10 @@ Cutoff and relay training, refreshed from the Spiders Cutoff & Backup Guide.
 - Every rep begins with a three-second overlay showing only runners and the selected position. The hit and throw are revealed after the countdown.
 - Runners lead along the next basepath (first toward second, second toward third). Tap the field to start a round or advance after a completed rotation. During a question, field taps select only the nearest answer marker within its touch target; empty-field taps and taps during animations do not advance. Controls are at least 48px tall, with larger answer buttons on touch devices and normal scrolling/pinch zoom preserved.
 - After either answer, all five infielders animate into the guide's assignments. Replay rotation repeats the visual without changing the score. Reduced-motion users see the final positions immediately.
-- Finish & review ends a practice round; challenge reviews appear when time expires. Each missed play lists the situation, chosen destination, correct assignment, coaching reason and source page. Practice also ends after its complete 135-question deck. Challenge retains its fixed 90-second wall clock, including countdowns and rotations.
+- Finish & review ends a practice round; challenge reviews appear when time expires. Each missed play lists the situation, chosen destination, correct assignment, coaching reason and source page. Practice also ends after its complete 135-question deck. Challenge pauses from the next-play tap through setup and the hit animation. Decision time, defensive rotations and reading time count toward its 90 seconds.
+
+- The top How to play button opens three illustrated examples, including tapping destination circles directly.
+- Version 2 leaderboard rankings use the new timing and scoring rules; older scores remain stored but are not ranked alongside them.
 
 ## Run
 
