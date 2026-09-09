@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import source from '../scenarios.json' with {type:'json'};
-import {buildPlays,makeDeck,makeQuestion,roles,destinations,assignments} from '../model.js';
+import {buildPlays,makeDeck,makeQuestion,roles,destinations,assignments,missedPlay,assignmentReason} from '../model.js';
 import {publicQuestion,nicknameValid} from '../api/game.js';
 const plays=buildPlays(source);
 test('all 15 source diagrams expand to 27 situations and 135 balanced questions',()=>{
@@ -30,4 +30,14 @@ test('booklet rotation exceptions are preserved',()=>{
 test('challenge payload never gives away correct answer or role assignments',()=>{
  const q=publicQuestion(makeDeck(plays)[0]);assert.equal(q.correct,undefined);assert.equal(q.play.assignments,undefined);assert.equal(q.play.explanations,undefined);
  assert.ok(nicknameValid('Ace18'));assert.ok(!nicknameValid('<script>'));assert.ok(!nicknameValid('A'.repeat(19)));
+});
+
+test('missed-play review preserves runner context and explains pitcher backup to third',()=>{
+ const play=plays.find(p=>p.page===11&&p.runners.join(',')==='second');
+ const q={play,role:'P',correct:play.assignments.P};
+ const missed=missedPlay(q,'backup-home-first',3);
+ assert.equal(missed.runners,'Runner on second');assert.equal(missed.role,'P');assert.equal(missed.rep,3);
+ assert.equal(missed.correct,'Back up third base in foul territory');
+ assert.match(missed.selected,/home/);assert.match(missed.why,/First base is open/);assert.match(missed.why,/even with a runner already on second/);
+ for(const p of plays)for(const role of roles)assert.ok(assignmentReason(p,role).length>40);
 });

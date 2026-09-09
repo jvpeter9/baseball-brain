@@ -60,3 +60,29 @@ export function makeDeck(plays,rng=Math.random){
  const queues=Object.fromEntries(roles.map(role=>[role,shuffle(plays,rng)]));
  return plays.flatMap(()=>shuffle(roles,rng).map(role=>makeQuestion(queues[role].pop(),role,plays,rng)));
 }
+
+export function runnerDescription(play){
+ if(!play.runners.length)return 'Bases empty';
+ const names={first:'first',second:'second',third:'third'};
+ return `${play.runners.length===1?'Runner':'Runners'} on ${play.runners.map(r=>names[r]).join(' and ')}`;
+}
+
+export function assignmentReason(play,role){
+ const id=play.assignments[role];
+ if(role==='P'&&play.page>=11&&play.page<=13)return 'First base is open, so the guide sets the extra-base relay to third to stop the batter from taking another base. The pitcher backs up that throw in foul territory—even with a runner already on second.';
+ if(role==='P'&&play.page>=14)return 'With a runner starting on first on an extra-base hit, there can be a play at home. The guide keeps the pitcher protecting home, even when this relay goes to third.';
+ if(id.startsWith('backup-'))return `The pitcher is the safety behind the throw to ${play.target==='home'?'home plate':play.target+' base'}, ready to stop an overthrow from letting runners advance.`;
+ if(id.startsWith('trail-'))return 'Both middle infielders go out on an extra-base hit. The second relay trails the first cutoff to stop a throw that gets through and help communicate the target.';
+ if(id.startsWith('relay-'))return `The ball is past the outfielders, so the first relay goes out to shorten the throw and line it up toward ${play.target==='home'?'home plate':'third base'}.`;
+ if(id.startsWith('cut-'))return `This position lines up between ${play.field} field and ${play.target==='home'?'home plate':play.target+' base'} so the defense can relay or redirect the throw.`;
+ if(id==='second'&&role==='1B')return 'Both middle infielders leave for the outfield relay, so the first baseman takes over second base to keep it covered.';
+ if(id==='first'&&role==='2B')return 'The first baseman is the cutoff to home, so the second baseman covers first for a possible throw back from the cutoff or catcher.';
+ if(id==='third'&&role==='SS')return 'The third baseman is the cutoff to home on a single to left, so the shortstop covers the vacated third-base bag.';
+ if(id==='second')return play.target==='home'?'Cover second in case the batter tries to advance on the throw home.':play.page>=5?'Keep second covered in case the runner retreats or the defense redirects the throw.':'Receive the throw to second while the other middle infielder handles the cutoff.';
+ if(id==='third')return play.target==='third'?'Third is the relay target. Stay ready there to receive the throw and make the play.':'Keep third covered and stay ready for a retreating runner or a redirected throw.';
+ return 'Stay ready at first for a throw back, so the defense can keep the batter close to the bag.';
+}
+
+export function missedPlay(question,selected,rep){
+ return {rep,role:question.role,scenario:`${question.play.kind==='extra'?'Extra-base hit':'Single'} to ${question.play.field}`,runners:runnerDescription(question.play),target:question.play.target,selected:destinations[selected].label,correct:destinations[question.correct].label,explanation:question.play.explanations[question.role],why:assignmentReason(question.play,question.role),page:question.play.page};
+}

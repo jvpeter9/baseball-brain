@@ -8,6 +8,9 @@ Cutoff and relay training, refreshed from the Spiders Cutoff & Backup Guide.
 - The 15 booklet diagrams expand into 27 situations / 135 position questions. First-base-open extra-base hits use empty bases, 2B, 3B, or 2B+3B. Runner-on-first extra-base plays explicitly choose a throw home or to third. No infield-hit scenarios are included.
 - Each question has exactly three choices: the correct assignment and two randomly sampled destinations that are correct elsewhere in the booklet. Choices cannot overlap or use identical labels.
 - Hit animation, clickable field markers, keyboard A/B/C shortcuts and large answer buttons. Reduced-motion support and responsive phone layout.
+- Every rep begins with a three-second overlay showing only runners and the selected position. The hit and throw are revealed after the countdown.
+- After either answer, all five infielders animate into the guide's assignments. Replay rotation repeats the visual without changing the score. Reduced-motion users see the final positions immediately.
+- Finish & review ends a practice round; challenge reviews appear when time expires. Each missed play lists the situation, chosen destination, correct assignment, coaching reason and source page. Practice also ends after its complete 135-question deck. Challenge retains its fixed 90-second wall clock, including countdowns and rotations.
 
 ## Run
 

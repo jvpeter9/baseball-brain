@@ -1,5 +1,7 @@
 # Refresh verification · 2026-09-08
 
+Learning-flow update: five model tests and a dedicated browser test now verify the 3/2/1 countdown, absence of pre-hit clues, actual intermediate player motion, all five final assignments, stationary outfielders, rotation replay, missed-play summaries, review reset and mobile layout. The pitcher/first-base-open/runner-on-second case explicitly explains backing up third. The existing desktop/mobile and isolated-database leaderboard regressions also pass with the new review flow.
+
 Passed four model/API-payload tests, including 5,400 randomized questions (16,200 answer choices), complete 15-page assignment coverage, 27 play variations and balanced 135-question decks.
 
 Passed Chromium browser checks at desktop and 390px phone width: practice, three answer buttons, field-marker input, correct/incorrect feedback, next question, challenge scoring, shared board reads, invalid choices, early posting, duplicate answers and idempotent retries. No page errors or horizontal overflow. Inspected desktop and phone screenshots.
