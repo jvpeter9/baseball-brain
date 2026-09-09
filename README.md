@@ -9,6 +9,7 @@ Cutoff and relay training, refreshed from the Spiders Cutoff & Backup Guide.
 - Each question has exactly three choices: the correct assignment and two randomly sampled destinations that are correct elsewhere in the booklet. Choices cannot overlap or use identical labels.
 - Hit animation, clickable field markers, keyboard A/B/C shortcuts and large answer buttons. Reduced-motion support and responsive phone layout.
 - Every rep begins with a three-second overlay showing only runners and the selected position. The hit and throw are revealed after the countdown.
+- Runners lead along the next basepath (first toward second, second toward third). Tap the field to start a round or advance after a completed rotation. During a question, field taps select only the nearest answer marker within its touch target; empty-field taps and taps during animations do not advance. Controls are at least 48px tall, with larger answer buttons on touch devices and normal scrolling/pinch zoom preserved.
 - After either answer, all five infielders animate into the guide's assignments. Replay rotation repeats the visual without changing the score. Reduced-motion users see the final positions immediately.
 - Finish & review ends a practice round; challenge reviews appear when time expires. Each missed play lists the situation, chosen destination, correct assignment, coaching reason and source page. Practice also ends after its complete 135-question deck. Challenge retains its fixed 90-second wall clock, including countdowns and rotations.
 

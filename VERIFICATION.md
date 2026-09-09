@@ -1,5 +1,7 @@
 # Refresh verification · 2026-09-08
 
+Touch update: `tests/touch-flow.mjs` passes with emulated touch at 390×844, 820×1180 and 1180×820. Checks first/second runner coordinates on their forward basepaths, start/next field taps, selection outside the small visible marker but inside its expanded touch target, inert empty-grass taps during questions, animation tap guards, completed-deck review, 48px controls and no horizontal overflow. Learning-flow regression also passes. Tablet rendering inspected visually.
+
 Learning-flow update: five model tests and a dedicated browser test now verify the 3/2/1 countdown, absence of pre-hit clues, actual intermediate player motion, all five final assignments, stationary outfielders, rotation replay, missed-play summaries, review reset and mobile layout. The pitcher/first-base-open/runner-on-second case explicitly explains backing up third. The existing desktop/mobile and isolated-database leaderboard regressions also pass with the new review flow.
 
 Passed four model/API-payload tests, including 5,400 randomized questions (16,200 answer choices), complete 15-page assignment coverage, 27 play variations and balanced 135-question decks.
