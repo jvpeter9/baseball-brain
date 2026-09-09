@@ -33,3 +33,5 @@ Field positions are schematic. A label such as “cover first / ready for a thro
 Neon project: `bitter-frost-37537876` (Baseball Brain), production branch `br-lucky-boat-ael83i9o`. Drizzle schema and versioned migrations live under `db/`. The browser receives a random challenge ID and choices; the server owns the question order, score, deadline and submission status. Retry requests are idempotent. Only completed challenges can post, once per challenge. Nicknames are public and do not require accounts. Scores are individual runs, not verified player identities; this is a friendly team leaderboard, not a cheat-proof competition.
 
 Production keeps no seeded leaderboard entries. `leaderboard-verification` is a separate Neon branch for end-to-end score tests. The original extensionless `index` is a historical file and is excluded from deployment; the active app is `index.html`.
+
+Challenge traffic: new decks store play IDs, choices, and frozen answers/explanations. SQL extracts only the current/next question plus timing and score metadata, including for older full-deck sessions. No schema migration or score reset is needed.
