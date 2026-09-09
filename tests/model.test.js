@@ -41,3 +41,23 @@ test('missed-play review preserves runner context and explains pitcher backup to
  assert.match(missed.selected,/home/);assert.match(missed.why,/First base is open/);assert.match(missed.why,/even with a runner already on second/);
  for(const p of plays)for(const role of roles)assert.ok(assignmentReason(p,role).length>40);
 });
+
+
+test('first baseman covering second must distinguish it from covering first',()=>{
+ for(const p of plays.filter(p=>p.assignments['1B']==='second'))for(let i=0;i<50;i++){
+  const q=makeQuestion(p,'1B',plays);assert.ok(q.choices.includes('first'));
+  assert.ok(q.choices.some(id=>/^(cut|relay|trail)-/.test(id)&&id.includes('-'+p.field+'-')));
+ }
+});
+test('distractors stay on the hit side, retain variation, and pitchers compare backups',()=>{
+ const variants=new Set();
+ for(let i=0;i<30;i++)for(const p of plays)for(const role of roles){
+  const q=makeQuestion(p,role,plays);variants.add(q.choices.join(','));
+  for(const id of q.choices){
+   const field=id.match(/(?:cut|relay|trail)-(left|center|right)-/)?.[1]||id.match(/backup-(?:second|third|home)-(left|center|right)$/)?.[1];
+   if(field)assert.equal(field,p.field);
+  }
+  if(role==='P')assert.ok(q.choices.filter(id=>id.startsWith('backup-')).length>=2);
+ }
+ assert.ok(variants.size>135);
+});

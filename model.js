@@ -47,11 +47,36 @@ export function shuffle(items,rng=Math.random){
 }
 export function makeQuestion(play,role,plays,rng=Math.random){
  const correct=play.assignments[role];
- // Every distractor is an actual correct destination, with a different physical location.
+ // Favor plausible responsibilities on this hit's side of the field. Every
+ // option still appears as a correct destination somewhere in the guide.
  const pool=[...new Set(plays.flatMap(p=>Object.values(p.assignments)))];
- const wrong=shuffle(pool.filter(id=>id!==correct&&destinations[id].label!==destinations[correct].label&&Math.hypot(...destinations[id].xy.map((v,i)=>v-destinations[correct].xy[i]))>48),rng);
+ const distance=(a,b)=>Math.hypot(...destinations[a].xy.map((v,i)=>v-destinations[b].xy[i]));
+ const compatible=(a,b)=>a!==b&&destinations[a].label!==destinations[b].label&&distance(a,b)>48;
+ const fieldOf=id=>id.match(/(?:cut|relay|trail)-(left|center|right)-/)?.[1]||id.match(/backup-(?:second|third|home)-(left|center|right)$/)?.[1];
+ const relevant=pool.filter(id=>!fieldOf(id)||fieldOf(id)===play.field);
+ const historical=new Set(plays.map(p=>p.assignments[role]));
  const picked=[];
- for(const id of wrong){if(picked.every(other=>destinations[id].label!==destinations[other].label&&Math.hypot(...destinations[id].xy.map((v,i)=>v-destinations[other].xy[i]))>48)){picked.push(id);if(picked.length===2)break;}}
+ const available=id=>compatible(id,correct)&&picked.every(other=>compatible(id,other));
+ const take=list=>{const id=list.find(available);if(id)picked.push(id);};
+ const nearest=list=>list.map(id=>({id,rank:distance(id,correct)+(historical.has(id)?0:70)+rng()*90})).sort((a,b)=>a.rank-b.rank).map(x=>x.id);
+ const usualBase={'1B':'first','2B':'second',SS:'second','3B':'third'}[role];
+ if(usualBase)take([usualBase]);
+ // Pitchers compare backup targets; other infielders compare base coverage
+ // with a cutoff/relay from the actual direction of the hit.
+ const responsibility=relevant.filter(id=>role==='P'?id.startsWith('backup-'):/^(cut|relay|trail)-/.test(id));
+ const ordered=responsibility.map(id=>({id,rank:
+  (id.endsWith('-'+play.target)?0:160)+
+  (play.kind==='extra'?(/^cut-/.test(id)?120:0):(/^(relay|trail)-/.test(id)?120:0))+
+  (historical.has(id)?0:40)+distance(id,correct)*.15+rng()*35
+ })).sort((a,b)=>a.rank-b.rank).map(x=>x.id);
+ if(picked.length<2)take(ordered);
+ while(picked.length<2){
+  const before=picked.length;
+  take(nearest(relevant));
+  // Safety fallback for unusual/custom play collections with sparse options.
+  if(picked.length===before)take(nearest(pool));
+  if(picked.length===before)break;
+ }
  if(picked.length!==2)throw new Error('Not enough distinct destinations');
  return {play,role,correct,choices:shuffle([correct,...picked],rng)};
 }
@@ -69,7 +94,7 @@ export function runnerDescription(play){
 
 export function assignmentReason(play,role){
  const id=play.assignments[role];
- if(role==='P'&&play.page>=11&&play.page<=13)return 'First base is open, so the guide sets the extra-base relay to third to stop the batter from taking another base. The pitcher backs up that throw in foul territory—even with a runner already on second.';
+ if(role==='P'&&play.page>=11&&play.page<=13)return 'First base is open, so the guide sets the extra-base relay to third to stop the batter from taking another base. The pitcher backs up that throw in foul territoryâ€”even with a runner already on second.';
  if(role==='P'&&play.page>=14)return 'With a runner starting on first on an extra-base hit, there can be a play at home. The guide keeps the pitcher protecting home, even when this relay goes to third.';
  if(id.startsWith('backup-'))return `The pitcher is the safety behind the throw to ${play.target==='home'?'home plate':play.target+' base'}, ready to stop an overthrow from letting runners advance.`;
  if(id.startsWith('trail-'))return 'Both middle infielders go out on an extra-base hit. The second relay trails the first cutoff to stop a throw that gets through and help communicate the target.';
