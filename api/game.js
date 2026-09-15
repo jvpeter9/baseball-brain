@@ -37,9 +37,9 @@ export default async function handler(req,res){
   if(!body||typeof body!=='object')throw fail(400,'Invalid request');
   if(body.action==='start'){
    const id=randomUUID(),deck=makeDeck(plays),now=new Date();
-   const timing=body.rulesVersion===2?{version:2,phase:'setup',remainingMs:90000}:null;
-   await db.insert(runs).values({id,deck:deck.map(compactQuestion),startedAt:now,expiresAt:new Date(+now+90000),timing});
-   return res.status(200).json({session:id,remainingMs:timing?90000:Math.max(0,+now+90000-Date.now()),question:publicQuestion(deck[0])});
+   const timing=body.rulesVersion===2?{version:2,phase:'setup',remainingMs:60000}:null;
+   await db.insert(runs).values({id,deck:deck.map(compactQuestion),startedAt:now,expiresAt:new Date(+now+60000),timing});
+   return res.status(200).json({session:id,remainingMs:timing?60000:Math.max(0,+now+60000-Date.now()),question:publicQuestion(deck[0])});
   }
   if(!['answer','finish','begin','resume'].includes(body.action))throw fail(400,'Unknown action');
   if(typeof body.session!=='string'||!/^[a-f0-9-]{36}$/.test(body.session))throw fail(400,'Invalid challenge');

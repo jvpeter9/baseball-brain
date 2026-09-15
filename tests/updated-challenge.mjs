@@ -11,8 +11,8 @@ try{
  await page.screenshot({path:'artifacts/help-mobile.png'});await page.locator('#helpClose').click();
  await page.clock.install();await page.locator('#challenge').click();
  const startResponse=page.waitForResponse(r=>r.url().endsWith('/api/game')&&r.request().postDataJSON()?.action==='start');await page.locator('#start').click();const {session}=await (await startResponse).json();
- assert.equal(await page.locator('#clock').innerText(),'90s');assert.match(await page.locator('#clockLabel').innerText(),/PAUSED/);
- await page.clock.runFor(3050);assert.equal(await page.locator('#clock').innerText(),'90s');assert.match(await page.locator('#clockLabel').innerText(),/PAUSED/);
+ assert.equal(await page.locator('#clock').innerText(),'60s');assert.match(await page.locator('#clockLabel').innerText(),/PAUSED/);
+ await page.clock.runFor(3050);assert.equal(await page.locator('#clock').innerText(),'60s');assert.match(await page.locator('#clockLabel').innerText(),/PAUSED/);
  await page.clock.runFor(1150);await page.locator('.answer:not([disabled])').first().waitFor();assert.equal(await page.locator('#clockLabel').innerText(),'TIME LEFT');
  const [run]=await getDb().select().from(runs).where(eq(runs.id,session));assert.equal(run.timing.phase,'running');
  const question=run.deck[0],wrongIndex=question.choices.findIndex(x=>x!==question.correct);
