@@ -19,7 +19,7 @@ for(const [field,outfielder] of [['left','LF'],['center','CF'],['right','RF']]){
  for(const target of ['third','home']){
   const deep=[field==='left'?115:field==='right'?585:350,field==='center'?80:155];
   add(`relay-${field}-${target}`,`First relay: go out toward ${field} field, lined up to ${target}`,mix(deep,bases[target],.30));
-  add(`trail-${field}-${target}`,`Second relay: trail the first cutoff from ${field} toward ${target}`,mix(deep,bases[target],.45));
+  add(`trail-${field}-${target}`,`Second relay: trail the first cutoff from ${field} toward ${target}`,mix(deep,bases[target],.65));
  }
  // Continue the actual throw line beyond the base to back it up.
  add(`backup-second-${field}`,'Back up the throw to second base',mix(origin,bases.second,1.28));

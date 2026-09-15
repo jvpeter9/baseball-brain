@@ -1,3 +1,4 @@
+import {hitPoint,retrievingRole,playFrame,PLAY_DURATION} from './play-animation.js';
 import {buildPlays,makeDeck,roles,roleNames,starts,bases,destinations,runnerDescription,assignmentReason,missedPlay} from './model.js';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -7,26 +8,34 @@ const letters=['A','B','C'];
 const runnerOffsets={first:[-17,-17],second:[-17,17],third:[17,17]};
 let starting=false,clockPaused=true,pausedMs=60000,transitioning=false;
 const line=(a,b,color,dash='')=>`<path d="M${a} L${b}" fill="none" stroke="${color}" stroke-width="2.5" ${dash?`stroke-dasharray="${dash}"`:''} marker-end="url(#arrow)"/>`;
-function draw(progress=1,showAnswer=false,movement=1){
+function draw(progress=1,showAnswer=false,movement=1,elapsed=PLAY_DURATION){
+ const action=showAnswer&&q?playFrame(q.play,elapsed):null;
  const field=$('field');
  let html=`<defs><pattern id="stripes" width="700" height="74" patternUnits="userSpaceOnUse"><rect width="700" height="37" fill="#ffffff" opacity=".025"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10" fill="none" stroke="#b1c9c4" stroke-width="2"/></marker></defs><path d="M350 530 L30 210 A390 390 0 0 1 670 210 Z" fill="#214d42" stroke="#ffffff25" stroke-width="2"/><path d="M350 530 L30 210 A390 390 0 0 1 670 210 Z" fill="url(#stripes)"/><path d="M350 530L193 373 Q350 163 507 373Z" fill="#a0946d" opacity=".42"/><path d="M350 496L247 393L350 290L453 393Z" fill="#214d42"/><path d="M20 200L350 530L680 200" fill="none" stroke="#dfebd5" stroke-width="2" opacity=".7"/><path d="M480 400L350 270L220 400" stroke="#d2d9c1" stroke-dasharray="5 8" fill="none" opacity=".4"/><circle cx="350" cy="392" r="22" fill="#9f9371"/><rect x="343" y="390" width="14" height="4" fill="#e9e9d9"/>`;
  for(const [name,[x,y]]of Object.entries(bases)){html+=name==='home'?`<path d="M343 523H357V531L350 537L343 531Z" fill="#eef1dd"/>`:`<rect x="${x-7}" y="${y-7}" width="14" height="14" transform="rotate(45 ${x} ${y})" fill="#eef1dd"/>`;}
  html+=`<text x="510" y="424" fill="#b1c7bb" font-size="12">1ST</text><text x="342" y="250" fill="#b1c7bb" font-size="12">2ND</text><text x="158" y="424" fill="#b1c7bb" font-size="12">3RD</text>`;
  if(q){
-  const p=q.play; const hit=[p.field==='left'?(p.kind==='extra'?115:167):p.field==='right'?(p.kind==='extra'?585:533):350,p.kind==='extra'?(p.field==='center'?80:155):(p.field==='center'?128:206)];
-  for(const base of p.runners){const [x,y]=bases[base], [dx,dy]=runnerOffsets[base];html+=`<circle data-runner="${base}" cx="${x+dx}" cy="${y+dy}" r="9" fill="#ffcf79" stroke="#172a2c" stroke-width="2"/>`;}
+  const p=q.play; const hit=hitPoint(p);
+  for(const base of (showAnswer?[]:p.runners)){const [x,y]=bases[base], [dx,dy]=runnerOffsets[base];html+=`<circle data-runner="${base}" cx="${x+dx}" cy="${y+dy}" r="9" fill="#ffcf79" stroke="#172a2c" stroke-width="2"/>`;}
   if(!prePitch){
-  html+=line(bases.home,hit,'#ffcf79','4 6');
-  const ball=bases.home.map((v,i)=>v+(hit[i]-v)*progress);html+=`<circle cx="${ball[0]}" cy="${ball[1]}" r="6" fill="#fff5d6" stroke="#ffcf79" stroke-width="2"/>`;
-  if(showAnswer){for(const role of roles)html+=line(starts[role],destinations[p.assignments[role]].xy,role===q.role?'#61d4bd':'#8eaaa4','3 5');html+=line(hit,bases[p.target],'#c5d6d0','7 7');}
+  if(!showAnswer&&progress<1)html+=line(bases.home,hit,'#ffcf79','4 6');
+  if(!showAnswer){const ball=bases.home.map((v,i)=>v+(hit[i]-v)*progress);html+=`<circle data-ball="hit" cx="${ball[0]}" cy="${ball[1]}" r="6" fill="#fff5d6" stroke="#ffcf79" stroke-width="2"/>`;}
+  if(showAnswer){
+   if(movement<1)for(const role of roles)html+=line(starts[role],destinations[p.assignments[role]].xy,role===q.role?'#61d4bd':'#8eaaa4','3 5');
+   for(let i=1;i<action.route.length;i++)html+=line(action.route[i-1],action.route[i],'#c5d6d0','7 7');
+  }
   }
  }
  for(const [role,origin]of Object.entries(starts)){
-  const destination=showAnswer&&roles.includes(role)?destinations[q.play.assignments[role]].xy:origin;
+  const destination=showAnswer?(roles.includes(role)?destinations[q.play.assignments[role]].xy:role===retrievingRole(q.play)?hitPoint(q.play):origin):origin;
   const [x,y]=origin.map((v,i)=>v+(destination[i]-v)*movement);
   const selected=q?.role===role;
   if(selected)html+=`<circle class="selectedHalo" cx="${x}" cy="${y}" r="25" fill="none" stroke="#61d4bd" stroke-width="3"/>`;
   html+=`<g data-fielder="${role}" data-x="${x}" data-y="${y}"><title>${role}${showAnswer&&roles.includes(role)?": "+esc(destinations[q.play.assignments[role]].label):""}</title><circle cx="${x}" cy="${y}" r="17" fill="${selected?'#61d4bd':'#142f38'}" stroke="${selected?'#d6fff0':'#53716f'}" stroke-width="1.5"/><text x="${x}" y="${y+5}" text-anchor="middle" fill="${selected?'#0b2425':'#d3e3dc'}" font-size="13" font-weight="700">${role}</text></g>`;
+ }
+ if(action){
+  for(const runner of action.runners){const [x,y]=runner.xy;html+=`<circle data-runner="${runner.id}" data-target="${runner.target}" cx="${x}" cy="${y}" r="9" fill="#ffcf79" stroke="#172a2c" stroke-width="2"/>`;}
+  html+=`<circle data-ball="throw" cx="${action.ball[0]}" cy="${action.ball[1]}" r="6" fill="#fff5d6" stroke="#ffcf79" stroke-width="2"/>`;
  }
  if(q&&ready&&!showAnswer&&!prePitch)q.choices.forEach((id,i)=>{const[x,y]=destinations[id].xy;html+=`<g class="marker" data-choice="${i}" ${active&&!answered?'role="button" tabindex="0"':''} aria-label="${letters[i]}: ${esc(destinations[id].label)}"><circle cx="${x}" cy="${y}" r="23" fill="${showAnswer&&id===q.correct?'#61d4bd':'#f6dfaa'}" stroke="#10282a" stroke-width="3"/><text x="${x}" y="${y+7}" text-anchor="middle" fill="#14282d" font-size="20" font-weight="800">${letters[i]}</text></g>`;});
  field.innerHTML=html;field.setAttribute('role',q&&ready?'group':'img');field.setAttribute('aria-label',q?(prePitch?`${roleNames[q.role]} highlighted. ${runnerDescription(q.play)}.`:`${roleNames[q.role]} highlighted. ${q.play.kind==='single'?'Single':'Extra-base hit'} to ${q.play.field}. Throw to ${q.play.target}.`):'Baseball field');
@@ -42,14 +51,14 @@ function stats(){ $('score').textContent=mode==='practice'?`${correct} / ${total
 function controls(){
  const canAdvance=!answerPending&&!transitioning&&!starting&&!prePitch&&!moving&&(!active||answered);
  $('fieldHint').disabled=!canAdvance;
- $('fieldHint').textContent=!active?'Tap the field to start':prePitch?'Get set…':moving?'Watch everyone move into position':answered?'Tap anywhere on the field for the next play':ready?'Tap A, B or C · or use the answer buttons':'Watch the hit…';
+ $('fieldHint').textContent=!active?'Tap the field to start':prePitch?'Get set…':moving?'Watch the fielders, runners and throw':answered?'Tap anywhere on the field for the next play':ready?'Tap A, B or C · or use the answer buttons':'Watch the hit…';
  $('field').classList.toggle('tapReady',canAdvance);
  $('field').setAttribute('tabindex',canAdvance?'0':'-1');
  for(const id of ['start','practice','challenge'])$(id).disabled=answerPending||transitioning;
  document.querySelectorAll('.answer').forEach(b=>b.disabled=!ready||answered||!active);
  $('next').hidden=!answered||!active;$('next').disabled=moving||transitioning;
  $('replay').hidden=!q||!active||prePitch||moving||(!answered&&mode==='challenge');
- $('replay').textContent=answered?'Replay rotation':'Replay hit';
+ $('replay').textContent=answered?'Replay play':'Replay hit';
  $('endPractice').hidden=!active||mode!=='practice';
 }
 function hidePrep(){prePitch=false;$('prePitch').hidden=true;document.querySelector('main').inert=false;document.querySelector('header').inert=false;}
@@ -76,8 +85,8 @@ function animateRotation(){
  cancelAnimationFrame(frame);const version=++animationVersion;moving=true;ready=false;controls();$('phase').textContent='WATCH THE INFIELD ROTATE';
  if(matchMedia('(max-width:760px)').matches)document.querySelector('.fieldPanel').scrollIntoView({behavior:'instant',block:'start'});
  const start=performance.now(),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- const tick=now=>{if(version!==animationVersion||!active)return;const progress=reduced?1:Math.min(1,(now-start)/1700),ease=progress*progress*(3-2*progress);draw(1,true,ease);
-  if(progress<1)frame=requestAnimationFrame(tick);else{moving=false;$('phase').textContent='EVERYONE IN POSITION';controls();$('next').focus({preventScroll:true});}
+ const tick=now=>{if(version!==animationVersion||!active)return;const elapsed=reduced?PLAY_DURATION:Math.min(PLAY_DURATION,now-start),progress=elapsed/PLAY_DURATION,action=playFrame(q.play,elapsed);$('phase').textContent=action.phase;draw(1,true,action.movement,elapsed);
+  if(progress<1)frame=requestAnimationFrame(tick);else{moving=false;$('phase').textContent='THROW BEATS THE RUNNER';controls();$('next').focus({preventScroll:true});}
  };frame=requestAnimationFrame(tick);
 }
 function animateHit(){cancelAnimationFrame(frame);const version=++animationVersion;ready=false;controls();$('phase').textContent='WATCH THE HIT';const start=performance.now();const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;

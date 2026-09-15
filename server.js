@@ -1,7 +1,7 @@
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
 import handler from './api/game.js';
-const files={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/app.js':'app.js','/model.js':'model.js','/scenarios.json':'scenarios.json'};
+const files={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/app.js':'app.js','/model.js':'model.js','/play-animation.js':'play-animation.js','/scenarios.json':'scenarios.json'};
 const mime={html:'text/html',css:'text/css',js:'text/javascript',json:'application/json'};
 http.createServer(async(req,res)=>{
  res.status=code=>{res.statusCode=code;return res;};res.json=value=>res.end(JSON.stringify(value));
