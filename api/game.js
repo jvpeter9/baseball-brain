@@ -60,7 +60,8 @@ export default async function handler(req,res){
      await tx.insert(scores).values({runId:run.id,nickname:body.nickname,score:run.score,answered:run.current});
      await tx.update(runs).set({submitted:true}).where(eq(runs.id,run.id));
     }
-    return {score:run.score};
+    const [posted]=await tx.select({nickname:scores.nickname,score:scores.score}).from(scores).where(eq(scores.runId,run.id));
+    return posted;
    }
    if(remainingTime(run)<=0||run.submitted)return {expired:true};
    if(body.index===run.current-1&&run.lastAnswer?.choice===body.choice)return run.lastAnswer.response;

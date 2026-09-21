@@ -6,6 +6,7 @@ let plays=[],deck=[],q=null,mode='practice',active=false,answered=false,ready=fa
 let prePitch=false,moving=false,misses=[],answerPending=false,finishRequested=false;
 const letters=['A','B','C'];
 const runnerOffsets={first:[-17,-17],second:[-17,17],third:[17,17]};
+let postingScore=false;
 let starting=false,clockPaused=true,pausedMs=60000,transitioning=false;
 const line=(a,b,color,dash='')=>`<path d="M${a} L${b}" fill="none" stroke="${color}" stroke-width="2.5" ${dash?`stroke-dasharray="${dash}"`:''} marker-end="url(#arrow)"/>`;
 function draw(progress=1,showAnswer=false,movement=1,elapsed=PLAY_DURATION){
@@ -19,7 +20,7 @@ function draw(progress=1,showAnswer=false,movement=1,elapsed=PLAY_DURATION){
   for(const base of (showAnswer?[]:p.runners)){const [x,y]=bases[base], [dx,dy]=runnerOffsets[base];html+=`<circle data-runner="${base}" cx="${x+dx}" cy="${y+dy}" r="9" fill="#ffcf79" stroke="#172a2c" stroke-width="2"/>`;}
   if(!prePitch){
   if(!showAnswer&&progress<1)html+=line(bases.home,hit,'#ffcf79','4 6');
-  if(!showAnswer){const ball=bases.home.map((v,i)=>v+(hit[i]-v)*progress);html+=`<circle data-ball="hit" cx="${ball[0]}" cy="${ball[1]}" r="6" fill="#fff5d6" stroke="#ffcf79" stroke-width="2"/>`;}
+  if(!showAnswer){const ball=bases.home.map((v,i)=>v+(hit[i]-v)*progress);html+=`<circle data-ball="hit" cx="${ball[0]}" cy="${ball[1]}" r="6" fill="#fff" stroke="#d94646" stroke-width="2.5"/>`;}
   if(showAnswer){
    if(movement<1)for(const role of roles)html+=line(starts[role],destinations[p.assignments[role]].xy,role===q.role?'#61d4bd':'#8eaaa4','3 5');
    for(let i=1;i<action.route.length;i++)html+=line(action.route[i-1],action.route[i],'#c5d6d0','7 7');
@@ -35,7 +36,7 @@ function draw(progress=1,showAnswer=false,movement=1,elapsed=PLAY_DURATION){
  }
  if(action){
   for(const runner of action.runners){const [x,y]=runner.xy;html+=`<circle data-runner="${runner.id}" data-target="${runner.target}" cx="${x}" cy="${y}" r="9" fill="#ffcf79" stroke="#172a2c" stroke-width="2"/>`;}
-  html+=`<circle data-ball="throw" cx="${action.ball[0]}" cy="${action.ball[1]}" r="6" fill="#fff5d6" stroke="#ffcf79" stroke-width="2"/>`;
+  html+=`<circle data-ball="throw" cx="${action.ball[0]}" cy="${action.ball[1]}" r="6" fill="#fff" stroke="#d94646" stroke-width="2.5"/>`;
  }
  if(q&&ready&&!showAnswer&&!prePitch)q.choices.forEach((id,i)=>{const[x,y]=destinations[id].xy;html+=`<g class="marker" data-choice="${i}" ${active&&!answered?'role="button" tabindex="0"':''} aria-label="${letters[i]}: ${esc(destinations[id].label)}"><circle cx="${x}" cy="${y}" r="23" fill="${showAnswer&&id===q.correct?'#61d4bd':'#f6dfaa'}" stroke="#10282a" stroke-width="3"/><text x="${x}" y="${y+7}" text-anchor="middle" fill="#14282d" font-size="20" font-weight="800">${letters[i]}</text></g>`;});
  field.innerHTML=html;field.setAttribute('role',q&&ready?'group':'img');field.setAttribute('aria-label',q?(prePitch?`${roleNames[q.role]} highlighted. ${runnerDescription(q.play)}.`:`${roleNames[q.role]} highlighted. ${q.play.kind==='single'?'Single':'Extra-base hit'} to ${q.play.field}. Throw to ${q.play.target}.`):'Baseball field');
@@ -52,6 +53,7 @@ function controls(){
  const canAdvance=!answerPending&&!transitioning&&!starting&&!prePitch&&!moving&&(!active||answered);
  $('fieldHint').disabled=!canAdvance;
  $('fieldHint').textContent=!active?'Tap the field to start':prePitch?'Get set…':moving?'Watch the fielders, runners and throw':answered?'Tap anywhere on the field for the next play':ready?'Tap A, B or C · or use the answer buttons':'Watch the hit…';
+ $('fieldHint').classList.toggle('attention',canAdvance&&(!active||answered));
  $('field').classList.toggle('tapReady',canAdvance);
  $('field').setAttribute('tabindex',canAdvance?'0':'-1');
  for(const id of ['start','practice','challenge'])$(id).disabled=answerPending||transitioning;
@@ -111,7 +113,7 @@ async function answer(index){
  const requestedQ=q;answerPending=true;ready=false;controls();try{const r=await api('answer',{session,index:questionIndex,choice:id});if(q!==requestedQ||!active)return;if(r.expired){finish();return;}q.correct=r.correct;q.play=plays.find(p=>p.id===q.play.id);remoteNext=r.next;questionIndex=r.index;reveal(id,r.explanation);}catch(e){if(q!==requestedQ||!active)return;$('feedback').textContent=e.message;ready=true;controls();}finally{answerPending=false;controls();if(finishRequested&&active){finishRequested=false;finish();}}
 }
 async function start(){
- if(!plays.length||starting||answerPending||transitioning)return;starting=true;$('start').disabled=true;clearInterval(timer);cancelAnimationFrame(frame);active=false;hidePrep();moving=false;misses=[];finishRequested=false;session=null;clockPaused=true;pausedMs=60000;correct=total=streak=questionIndex=0;$('saveStatus').textContent='';$('saveScore').hidden=false;
+ if(!plays.length||starting||answerPending||transitioning||postingScore)return;starting=true;$('start').disabled=true;clearInterval(timer);cancelAnimationFrame(frame);active=false;hidePrep();moving=false;misses=[];finishRequested=false;session=null;clockPaused=true;pausedMs=60000;correct=total=streak=questionIndex=0;$('saveStatus').textContent='';$('nickname').value='';$('saveScore').hidden=false;
  try{if(mode==='challenge'){const r=await api('start',{rulesVersion:2});session=r.session;pausedMs=r.remainingMs;clockPaused=true;deadline=Date.now()+r.remainingMs;q=r.question;timer=setInterval(()=>{stats();if(!clockPaused&&Date.now()>=deadline)finish();},200);}else{deck=makeDeck(plays);q=deck.shift();}active=true;stats();renderQuestion();$('start').textContent='Restart '+mode;}catch(e){$('feedback').textContent=e.message;}finally{starting=false;$('start').disabled=false;controls();}
 }
 function finish(){
@@ -124,7 +126,7 @@ function finish(){
  $('missedReview').innerHTML=misses.length?`<h3>${misses.length} ${misses.length===1?'play':'plays'} to work on</h3>`+misses.map(m=>`<article class="missedPlay"><p class="eyebrow">REP ${m.rep} · ${m.role}</p><h3>${esc(m.scenario)}</h3><p>${esc(m.runners)} · Throw to ${esc(m.target)}</p><p class="yourChoice"><strong>You chose:</strong> ${esc(m.selected)}</p><p class="rightChoice"><strong>Correct spot:</strong> ${esc(m.correct)}</p><p>${esc(m.explanation)}</p><p><strong>Why:</strong> ${esc(m.why)}</p><small>Spiders guide · page ${m.page}</small></article>`).join(''):`<p>${total?'No missed plays. Nice reads!':'No answers yet. Take a few reps to build your review.'}</p>`;
  $('results').showModal();
 }
-function setMode(value){hidePrep();moving=false;misses=[];finishRequested=false;mode=value;active=false;ready=false;q=null;clearInterval(timer);cancelAnimationFrame(frame);animationVersion++;$('practice').setAttribute('aria-pressed',value==='practice');$('challenge').setAttribute('aria-pressed',value==='challenge');$('modeNote').textContent=value==='practice'?'Take your time. Learn the why behind every move.':'60 seconds. +10 correct / −5 incorrect. Clock pauses for setup and the hit.';$('start').textContent='Start '+value;$('scoreLabel').textContent=value==='practice'?'CORRECT':'POINTS';$('clockLabel').textContent=value==='practice'?'STREAK':'TIME LEFT';correct=total=streak=0;deadline=Date.now()+60000;stats();$('choices').innerHTML='';$('feedback').textContent='';$('question').innerHTML='<p class="eyebrow">READY FOR YOUR NEXT REP</p><h2>Let’s make the play.</h2><p>Press Start '+value+' to take the field.</p>';$('phase').textContent='READY WHEN YOU ARE';controls();draw();}
+function setMode(value){hidePrep();moving=false;misses=[];finishRequested=false;mode=value;active=false;ready=false;q=null;clearInterval(timer);cancelAnimationFrame(frame);animationVersion++;$('practice').setAttribute('aria-pressed',value==='practice');$('challenge').setAttribute('aria-pressed',value==='challenge');$('modeNote').textContent=value==='practice'?'Take your time. Learn the why behind every move.':'60 seconds. +10 correct / −5 incorrect.';$('start').textContent='Start '+value;$('scoreLabel').textContent=value==='practice'?'CORRECT':'POINTS';$('clockLabel').textContent=value==='practice'?'STREAK':'TIME LEFT';correct=total=streak=0;deadline=Date.now()+60000;stats();$('choices').innerHTML='';$('feedback').textContent='';$('question').innerHTML='<p class="eyebrow">READY FOR YOUR NEXT REP</p><h2>Let’s make the play.</h2><p>Press Start '+value+' to take the field.</p>';$('phase').textContent='READY WHEN YOU ARE';controls();draw();}
 $('helpOpen').onclick=()=>$('help').showModal();$('helpClose').onclick=()=>$('help').close();
 $('practice').onclick=()=>setMode('practice');$('challenge').onclick=()=>setMode('challenge');$('start').onclick=start;
 $('endPractice').onclick=finish;
@@ -151,7 +153,19 @@ $('field').onkeydown=e=>{if(e.target===$('field')&&['Enter',' '].includes(e.key)
 $('replay').onclick=()=>{if(active&&!moving&&!prePitch){if(answered)animateRotation();else animateHit();}};
 $('boardOpen').onclick=async()=>{$('board').showModal();$('rankings').textContent='Loading scores…';try{const r=await api('board');$('rankings').innerHTML=r.scores.length?`<table><thead><tr><th>Rank</th><th>Player</th><th>Points</th></tr></thead><tbody>${r.scores.map((s,i)=>`<tr><td>${i+1}</td><td>${esc(s.nickname)}</td><td>${s.score}</td></tr>`).join('')}</tbody></table>`:'The board is open. Play a challenge and set the first score!';}catch(e){$('rankings').textContent=e.message;}};
 $('boardClose').onclick=()=>$('board').close();$('resultsClose').onclick=()=>$('results').close();
-$('saveScore').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;try{const r=await api('finish',{session,nickname:$('nickname').value.trim()});$('saveStatus').textContent=`Posted! ${r.score} points are on the shared board.`;$('saveScore').hidden=true;}catch(error){$('saveStatus').textContent=error.message;}finally{button.disabled=false;}};
+$('saveScore').onsubmit=async e=>{
+ e.preventDefault();if(postingScore||!session)return;
+ postingScore=true;const submittedSession=session,button=e.target.querySelector('button');button.disabled=true;$('resultsClose').disabled=true;
+ try{
+  // Commit the mobile keyboard's current edit before reading the name.
+  $('nickname').blur();await new Promise(resolve=>requestAnimationFrame(resolve));
+  const nickname=$('nickname').value.trim();
+  const r=await api('finish',{session:submittedSession,nickname});
+  if(session!==submittedSession)return;
+  $('saveStatus').textContent=`Posted as ${r.nickname||nickname}! ${r.score} points are on the shared board.`;$('saveScore').hidden=true;
+ }catch(error){if(session===submittedSession)$('saveStatus').textContent=error.message;}
+ finally{postingScore=false;button.disabled=false;$('resultsClose').disabled=false;}
+};
 document.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||['INPUT','BUTTON'].includes(e.target.tagName))return;const i='abc'.indexOf(e.key.toLowerCase());if(i>=0)answer(i);});
 draw();$('start').disabled=true;$('fieldHint').disabled=true;
 try{const r=await fetch('./scenarios.json');if(!r.ok)throw new Error('Could not load the playbook. Reload to try again.');plays=buildPlays(await r.json());$('start').disabled=false;controls();}catch(e){$('feedback').textContent=e.message;}
