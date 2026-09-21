@@ -1,191 +1,182 @@
 [
   {
-    "hitTo": "firstBase",
-    "userControls": "catcher",
-    "correctPosition": "home",
-    "incorrectPosition": "backuphome",
-    "outs": 1,
-    "runners": ["third"],
-    "hitType": "ground"
+    "page": 2,
+    "field": "left",
+    "kind": "single",
+    "explanations": {
+      "P": "Back up the throw to second base.",
+      "1B": "Be prepared for either an overthrow to second or a throw back to first.",
+      "2B": "Cover second base.",
+      "SS": "Be the cutoff man between the left fielder and second base.",
+      "3B": "Don\u2019t stray too far from third base. Be prepared for either a deflection or the need to cover third."
+    }
   },
   {
-    "hitTo": "thirdBase",
-    "userControls": "catcher",
-    "correctPosition": "home",
-    "incorrectPosition": "backuphome",
-    "outs": 0,
-    "runners": ["third"],
-    "hitType": "ground"
+    "page": 3,
+    "field": "center",
+    "kind": "single",
+    "explanations": {
+      "P": "Back up the throw to second base.",
+      "1B": "Be prepared for either an overthrow to second or a throw back to first.",
+      "2B": "Cover second base.",
+      "SS": "Be the cutoff man between the center fielder and second base.",
+      "3B": "Don\u2019t stray too far from third base. Be prepared for either a deflection or the need to cover third."
+    }
   },
   {
-    "hitTo": "centerField",
-    "userControls": "catcher",
-    "correctPosition": "home",
-    "incorrectPosition": "pitcherMound",
-    "outs": 2,
-    "runners": ["second"],
-    "hitType": "ground"
+    "page": 4,
+    "field": "right",
+    "kind": "single",
+    "explanations": {
+      "P": "Back up the throw to second base.",
+      "1B": "Be prepared for a throw to first base from either second base or right field.",
+      "2B": "Be the cutoff man between the right fielder and second base.",
+      "SS": "Cover second base.",
+      "3B": "Don\u2019t stray too far from third base. Be prepared for either an overthrow of second base or the need to cover third."
+    }
   },
   {
-    "hitTo": "shortstop",
-    "userControls": "firstBase",
-    "correctPosition": "first",
-    "incorrectPosition": "pitcherMound",
-    "outs": 0,
-    "runners": ["first", "second"],
-    "hitType": "ground"
+    "page": 5,
+    "field": "left",
+    "kind": "single",
+    "explanations": {
+      "P": "Move into foul territory and back up the throw to third base.",
+      "1B": "Be prepared for a throw back to first.",
+      "2B": "Cover second base in the event the runner retreats.",
+      "SS": "Be the cutoff man between the left fielder and third base.",
+      "3B": "Cover third base."
+    }
   },
   {
-    "hitTo": "thirdBase",
-    "userControls": "firstBase",
-    "correctPosition": "first",
-    "incorrectPosition": "rfcutoff",
-    "outs": 1,
-    "runners": ["first"],
-    "hitType": "fly"
+    "page": 6,
+    "field": "center",
+    "kind": "single",
+    "explanations": {
+      "P": "Move into foul territory and back up the throw to third base.",
+      "1B": "Be prepared for a throw back to first.",
+      "2B": "Cover second base in the event the runner retreats.",
+      "SS": "Be the cutoff man between the center fielder and third base.",
+      "3B": "Cover third base."
+    }
   },
   {
-    "hitTo": "rightField",
-    "userControls": "firstBase",
-    "correctPosition": "first",
-    "incorrectPosition": "rfcutoff",
-    "outs": 0,
-    "runners": ["first"],
-    "hitType": "fly"
+    "page": 7,
+    "field": "right",
+    "kind": "single",
+    "explanations": {
+      "P": "Move into foul territory to back up the throw to third base.",
+      "1B": "Be prepared for a throw back to first.",
+      "2B": "Cover second base in the event the runner retreats.",
+      "SS": "Be the cutoff man between the right fielder and third base.",
+      "3B": "Cover third base."
+    }
   },
   {
-    "hitTo": "shortstop",
-    "userControls": "firstBase",
-    "correctPosition": "first",
-    "incorrectPosition": "pitcherMound",
-    "outs": 1,
-    "runners": [],
-    "hitType": "ground"
+    "page": 8,
+    "field": "left",
+    "kind": "single",
+    "explanations": {
+      "P": "Move into foul territory behind the catcher to back up the throw home.",
+      "1B": "Be prepared for a throw back to first.",
+      "2B": "Cover second base in the event the batter advances to second following a throw home.",
+      "SS": "Cover third base.",
+      "3B": "Be the cutoff man between the left fielder and home plate."
+    }
   },
   {
-    "hitTo": "firstBase",
-    "userControls": "leftField",
-    "correctPosition": "lfcutoff",
-    "incorrectPosition": "third",
-    "outs": 1,
-    "runners": ["first"],
-    "hitType": "ground"
+    "page": 9,
+    "field": "center",
+    "kind": "single",
+    "explanations": {
+      "P": "Move into foul territory behind the catcher to back up the throw home.",
+      "1B": "Be the cutoff man immediately behind the mound between the center fielder and home plate.",
+      "2B": "Cover first base. Be prepared for a possible throw from the cutoff man or the catcher.",
+      "SS": "Cover second base in the event the batter advances to second following a throw home.",
+      "3B": "Cover third base. Be prepared for a throw to third if the runner retreats."
+    }
   },
   {
-    "hitTo": "secondBase",
-    "userControls": "leftField",
-    "correctPosition": "backupthird",
-    "incorrectPosition": "pitcherMound",
-    "outs": 1,
-    "runners": ["second"],
-    "hitType": "ground"
+    "page": 10,
+    "field": "right",
+    "kind": "single",
+    "explanations": {
+      "P": "Move into foul territory behind the catcher to back up the throw home.",
+      "1B": "Be the cutoff man between the right fielder and home plate.",
+      "2B": "Cover first base. Be prepared for a possible throw from the cutoff man or the catcher.",
+      "SS": "Cover second base in the event the batter advances to second following a throw home.",
+      "3B": "Cover third base. Be prepared for a throw to third if the runner retreats."
+    }
   },
   {
-    "hitTo": "centerField",
-    "userControls": "pitcher",
-    "correctPosition": "backuphome",
-    "incorrectPosition": "second",
-    "outs": 1,
-    "runners": ["second"],
-    "hitType": "ground"
+    "page": 11,
+    "field": "left",
+    "kind": "extra",
+    "explanations": {
+      "P": "Move into foul territory to back up a throw to third base.",
+      "1B": "Once it\u2019s a clear extra base hit and middle infielders break for the outfield, cover second base.",
+      "2B": "If the ball gets by the outfielders, head for the outfield to be a second cutoff man to play anything that gets through the shortstop. Also communicate with the shortstop about the throw.",
+      "SS": "If the ball gets by the outfielders, head for the outfield to be the first cutoff man to make a relay throw to third base.",
+      "3B": "Cover third base."
+    }
   },
   {
-    "hitTo": "thirdBase",
-    "userControls": "rightField",
-    "correctPosition": "backupfirst",
-    "incorrectPosition": "rfcutoff",
-    "outs": 0,
-    "runners": [],
-    "hitType": "ground"
+    "page": 12,
+    "field": "center",
+    "kind": "extra",
+    "explanations": {
+      "P": "Move into foul territory to back up a throw to third base.",
+      "1B": "Once it\u2019s a clear extra base hit and middle infielders break for the outfield, cover second base.",
+      "2B": "If the ball gets by the outfielders, head for the outfield to be a second cutoff man to play anything that gets through the shortstop. Also communicate with the shortstop about the throw.",
+      "SS": "If the ball gets by the outfielders, head for the outfield to be the first cutoff man to make a relay throw to third base.",
+      "3B": "Cover third base."
+    }
   },
   {
-    "hitTo": "leftField",
-    "userControls": "secondBase",
-    "correctPosition": "second",
-    "incorrectPosition": "rfcutoff",
-    "outs": 1,
-    "runners": ["second"],
-    "hitType": "fly"
+    "page": 13,
+    "field": "right",
+    "kind": "extra",
+    "explanations": {
+      "P": "Move into foul territory to back up a throw to third base.",
+      "1B": "Once it\u2019s a clear extra base hit and middle infielders break for the outfield, cover second base.",
+      "2B": "If the ball gets by the outfielders, head for the outfield to be the first cutoff man to make a relay throw to third base.",
+      "SS": "If the ball gets by the outfielders, head for the outfield to be a second cutoff man to play anything that gets through the second baseman. Communicate with the 2B about the throw.",
+      "3B": "Cover third base."
+    }
   },
   {
-    "hitTo": "rightField",
-    "userControls": "secondBase",
-    "correctPosition": "rfcutoff",
-    "incorrectPosition": "second",
-    "outs": 2,
-    "runners": [],
-    "hitType": "ground"
+    "page": 14,
+    "field": "left",
+    "kind": "extra",
+    "explanations": {
+      "P": "Move into foul territory, slightly to the first base side, to back up a throw home.",
+      "1B": "Once it\u2019s a clear extra base hit and middle infielders break for the outfield, cover second base.",
+      "2B": "If the ball gets by the outfielders, head for the outfield to be a second cutoff man to play anything that gets through the shortstop. Also communicate with the shortstop about the throw.",
+      "SS": "If the ball gets by the outfielders, head for the outfield to be the first cutoff man to make a relay throw to home or third base, depending on where there\u2019s a play.",
+      "3B": "Cover third base."
+    }
   },
   {
-    "hitTo": "leftField",
-    "userControls": "shortstop",
-    "correctPosition": "lfcutoff",
-    "incorrectPosition": "second",
-    "outs": 2,
-    "runners": ["second"],
-    "hitType": "ground"
+    "page": 15,
+    "field": "center",
+    "kind": "extra",
+    "explanations": {
+      "P": "Move into foul territory to back up a throw home, slightly to 3B side to back up 3B if necessary.",
+      "1B": "Once it\u2019s a clear extra base hit and middle infielders break for the outfield, cover second base.",
+      "2B": "If the ball gets by the outfielders, head for the outfield to be a second cutoff man to play anything that gets through the shortstop. Also communicate with the shortstop about the throw.",
+      "SS": "If the ball gets by the outfielders, head for the outfield to be the first cutoff man to make a relay throw to either home plate (to get the runner) or third base (to get the batter).",
+      "3B": "Cover third base."
+    }
   },
   {
-    "hitTo": "rightField",
-    "userControls": "shortstop",
-    "correctPosition": "second",
-    "incorrectPosition": "rfcutoff",
-    "outs": 0,
-    "runners": [],
-    "hitType": "ground"
-  },
-  {
-    "hitTo": "firstBase",
-    "userControls": "shortstop",
-    "correctPosition": "second",
-    "incorrectPosition": "lfcutoff",
-    "outs": 1,
-    "runners": ["first"],
-    "hitType": "ground"
-  },
-  {
-    "hitTo": "pitcher",
-    "userControls": "thirdBase",
-    "correctPosition": "third",
-    "incorrectPosition": "shortstopCover",
-    "outs": 0,
-    "runners": ["first", "second"],
-    "hitType": "ground"
-  },
-  {
-    "hitTo": "centerField",
-    "userControls": "thirdBase",
-    "correctPosition": "third",
-    "incorrectPosition": "backuphome",
-    "outs": 1,
-    "runners": ["first", "second"],
-    "hitType": "ground"
-  },
-  {
-    "hitTo": "centerField",
-    "userControls": "thirdBase",
-    "correctPosition": "third",
-    "incorrectPosition": "shortstopCover",
-    "outs": 0,
-    "runners": ["first", "second"],
-    "hitType": "ground"
-  },
-  {
-    "hitTo": "thirdBase",
-    "userControls": "secondBase",
-    "correctPosition": "second",
-    "incorrectPosition": "rfcutoff",
-    "outs": 1,
-    "runners": ["first"],
-    "hitType": "ground"
-  },
-  {
-    "hitTo": "pitcher",
-    "userControls": "thirdBase",
-    "correctPosition": "third",
-    "incorrectPosition": "backuphome",
-    "outs": 1,
-    "runners": ["third"],
-    "hitType": "fly"
+    "page": 16,
+    "field": "right",
+    "kind": "extra",
+    "explanations": {
+      "P": "Move into foul territory behind the plate on the third base side to back up a throw home.",
+      "1B": "Once it\u2019s a clear extra base hit and middle infielders break for the outfield, cover second base.",
+      "2B": "If the ball gets by the outfielders, head for the outfield to be the first cutoff man to make a relay throw to either home plate (to get the runner) or third base (to get the batter).",
+      "SS": "If the ball gets by the outfielders, head for the outfield to be a second cutoff man to play anything that gets through the second baseman. Also communicate with the 2B about the throw.",
+      "3B": "Cover third base."
+    }
   }
 ]

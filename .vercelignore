@@ -1,0 +1,5 @@
+.env*
+artifacts
+tests
+index
+.git
